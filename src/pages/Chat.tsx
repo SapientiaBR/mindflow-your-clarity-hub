@@ -1,0 +1,163 @@
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useItems } from '@/hooks/useItems';
+import { ItemType, ITEM_TYPES, getItemTypeConfig } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { Send, Plus, X } from 'lucide-react';
+import AppLayout from '@/components/layout/AppLayout';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+export default function Chat() {
+  const [message, setMessage] = useState('');
+  const [selectedType, setSelectedType] = useState<ItemType>('note');
+  const [showTypeMenu, setShowTypeMenu] = useState(false);
+  const { items, createItem } = useItems();
+  const { toast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [items]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+
+    try {
+      await createItem.mutateAsync({
+        type: selectedType,
+        content: message.trim(),
+      });
+      
+      const typeConfig = getItemTypeConfig(selectedType);
+      toast({
+        title: `${typeConfig.icon} Salvo como ${typeConfig.label}`,
+        duration: 2000,
+      });
+      setMessage('');
+    } catch (error) {
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Tente novamente.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const currentTypeConfig = getItemTypeConfig(selectedType);
+
+  return (
+    <AppLayout>
+      <div className="flex-1 flex flex-col h-full">
+        {/* Header */}
+        <header className="p-4 border-b border-border">
+          <h1 className="text-2xl font-display font-bold gradient-text">Chat</h1>
+          <p className="text-sm text-muted-foreground">Registre seus pensamentos rapidamente</p>
+        </header>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <AnimatePresence>
+            {[...items].reverse().map((item) => {
+              const config = getItemTypeConfig(item.type);
+              return (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="flex justify-end"
+                >
+                  <div className="max-w-[80%] md:max-w-[60%]">
+                    <div className="glass-card rounded-2xl rounded-br-md p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`text-sm px-2 py-0.5 rounded-full border ${config.bgClass}`}>
+                          {config.icon} {config.label}
+                        </span>
+                      </div>
+                      <p className="text-foreground">{item.content}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 text-right">
+                      {format(new Date(item.created_at), "HH:mm", { locale: ptBR })}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Type selector popup */}
+        <AnimatePresence>
+          {showTypeMenu && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="absolute bottom-24 md:bottom-20 left-4 right-4 md:left-auto md:right-auto md:w-80 glass-card rounded-2xl p-4 z-50"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-medium">Selecione o tipo</span>
+                <Button variant="ghost" size="icon" onClick={() => setShowTypeMenu(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {ITEM_TYPES.map((type) => (
+                  <button
+                    key={type.type}
+                    onClick={() => {
+                      setSelectedType(type.type);
+                      setShowTypeMenu(false);
+                    }}
+                    className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${
+                      selectedType === type.type
+                        ? `${type.bgClass} border-current`
+                        : 'border-border hover:bg-muted'
+                    }`}
+                  >
+                    <span className="text-xl">{type.icon}</span>
+                    <span className="text-sm font-medium">{type.label}</span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Input area */}
+        <form onSubmit={handleSubmit} className="p-4 border-t border-border bg-background/80 backdrop-blur-xl">
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowTypeMenu(!showTypeMenu)}
+              className={`shrink-0 ${currentTypeConfig.bgClass} border-current`}
+            >
+              <span className="text-lg mr-1">{currentTypeConfig.icon}</span>
+              <span className="hidden sm:inline">{currentTypeConfig.label}</span>
+              <Plus className="w-4 h-4 ml-1 sm:hidden" />
+            </Button>
+            <Input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Digite seu pensamento..."
+              className="flex-1 bg-muted/50"
+            />
+            <Button type="submit" disabled={!message.trim() || createItem.isPending} className="bg-gradient-primary">
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </form>
+      </div>
+    </AppLayout>
+  );
+}
