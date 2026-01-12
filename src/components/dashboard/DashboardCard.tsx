@@ -8,7 +8,7 @@ interface DashboardCardProps {
   title: string;
   icon: LucideIcon;
   count: number;
-  gradient: 'red' | 'purple' | 'cyan' | 'green';
+  gradient: 'red' | 'purple' | 'cyan' | 'green' | 'blue';
   navigateTo: string;
   delay?: number;
   children: ReactNode;
@@ -19,6 +19,7 @@ const gradientClasses = {
   purple: 'from-mindflow-purple/20 to-mindflow-pink/20 hover:from-mindflow-purple/30 hover:to-mindflow-pink/30',
   cyan: 'from-mindflow-cyan/20 to-mindflow-blue/20 hover:from-mindflow-cyan/30 hover:to-mindflow-blue/30',
   green: 'from-mindflow-green/20 to-accent/20 hover:from-mindflow-green/30 hover:to-accent/30',
+  blue: 'from-mindflow-blue/20 to-mindflow-cyan/20 hover:from-mindflow-blue/30 hover:to-mindflow-cyan/30',
 };
 
 const glowClasses = {
@@ -26,6 +27,7 @@ const glowClasses = {
   purple: 'hover:shadow-[0_0_60px_-15px_hsl(var(--mindflow-purple)/0.5)]',
   cyan: 'hover:shadow-[0_0_60px_-15px_hsl(var(--mindflow-cyan)/0.5)]',
   green: 'hover:shadow-[0_0_60px_-15px_hsl(var(--mindflow-green)/0.5)]',
+  blue: 'hover:shadow-[0_0_60px_-15px_hsl(var(--mindflow-blue)/0.5)]',
 };
 
 const iconColors = {
@@ -33,6 +35,7 @@ const iconColors = {
   purple: 'text-mindflow-purple',
   cyan: 'text-mindflow-cyan',
   green: 'text-mindflow-green',
+  blue: 'text-mindflow-blue',
 };
 
 const borderGradients = {
@@ -40,6 +43,7 @@ const borderGradients = {
   purple: 'before:bg-gradient-to-r before:from-mindflow-purple before:to-mindflow-pink',
   cyan: 'before:bg-gradient-to-r before:from-mindflow-cyan before:to-mindflow-blue',
   green: 'before:bg-gradient-to-r before:from-mindflow-green before:to-accent',
+  blue: 'before:bg-gradient-to-r before:from-mindflow-blue before:to-mindflow-cyan',
 };
 
 export default function DashboardCard({
