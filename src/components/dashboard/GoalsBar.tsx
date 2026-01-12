@@ -23,7 +23,7 @@ export default function GoalsBar({ goals }: GoalsBarProps) {
               <Target className="w-5 h-5 text-purple-400" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-foreground">Meus Objetivos</h3>
+              <h3 className="text-sm font-medium text-foreground">🎯 Meus Objetivos</h3>
               <p className="text-xs text-muted-foreground">Nenhum objetivo definido ainda</p>
             </div>
           </div>
@@ -56,7 +56,7 @@ export default function GoalsBar({ goals }: GoalsBarProps) {
           <div className="p-2 rounded-lg bg-purple-500/20">
             <Target className="w-5 h-5 text-purple-400" />
           </div>
-          <h3 className="text-sm font-medium text-foreground">Meus Objetivos</h3>
+          <h3 className="text-sm font-medium text-foreground">🎯 Meus Objetivos</h3>
         </div>
         <motion.button
           whileHover={{ scale: 1.05 }}

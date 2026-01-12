@@ -8,7 +8,7 @@ interface DashboardCardProps {
   title: string;
   icon: LucideIcon;
   count: number;
-  gradient: 'red' | 'purple' | 'cyan' | 'green' | 'blue';
+  gradient: 'red' | 'purple' | 'cyan' | 'green' | 'blue' | 'yellow' | 'orange';
   navigateTo: string;
   delay?: number;
   children: ReactNode;
@@ -20,6 +20,8 @@ const gradientClasses = {
   cyan: 'from-mindflow-cyan/20 to-mindflow-blue/20 hover:from-mindflow-cyan/30 hover:to-mindflow-blue/30',
   green: 'from-mindflow-green/20 to-accent/20 hover:from-mindflow-green/30 hover:to-accent/30',
   blue: 'from-mindflow-blue/20 to-mindflow-cyan/20 hover:from-mindflow-blue/30 hover:to-mindflow-cyan/30',
+  yellow: 'from-mindflow-yellow/20 to-amber-500/20 hover:from-mindflow-yellow/30 hover:to-amber-500/30',
+  orange: 'from-mindflow-orange/20 to-amber-500/20 hover:from-mindflow-orange/30 hover:to-amber-500/30',
 };
 
 const glowClasses = {
@@ -28,6 +30,8 @@ const glowClasses = {
   cyan: 'hover:shadow-[0_0_60px_-15px_hsl(var(--mindflow-cyan)/0.5)]',
   green: 'hover:shadow-[0_0_60px_-15px_hsl(var(--mindflow-green)/0.5)]',
   blue: 'hover:shadow-[0_0_60px_-15px_hsl(var(--mindflow-blue)/0.5)]',
+  yellow: 'hover:shadow-[0_0_60px_-15px_hsl(var(--mindflow-yellow)/0.5)]',
+  orange: 'hover:shadow-[0_0_60px_-15px_hsl(var(--mindflow-orange)/0.5)]',
 };
 
 const iconColors = {
@@ -36,6 +40,8 @@ const iconColors = {
   cyan: 'text-mindflow-cyan',
   green: 'text-mindflow-green',
   blue: 'text-mindflow-blue',
+  yellow: 'text-mindflow-yellow',
+  orange: 'text-mindflow-orange',
 };
 
 const borderGradients = {
@@ -44,6 +50,8 @@ const borderGradients = {
   cyan: 'before:bg-gradient-to-r before:from-mindflow-cyan before:to-mindflow-blue',
   green: 'before:bg-gradient-to-r before:from-mindflow-green before:to-accent',
   blue: 'before:bg-gradient-to-r before:from-mindflow-blue before:to-mindflow-cyan',
+  yellow: 'before:bg-gradient-to-r before:from-mindflow-yellow before:to-amber-500',
+  orange: 'before:bg-gradient-to-r before:from-mindflow-orange before:to-amber-500',
 };
 
 export default function DashboardCard({

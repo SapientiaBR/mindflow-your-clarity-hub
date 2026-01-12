@@ -69,6 +69,7 @@ export default {
           cyan: "hsl(var(--mindflow-cyan))",
           orange: "hsl(var(--mindflow-orange))",
           pink: "hsl(var(--mindflow-pink))",
+          yellow: "hsl(var(--mindflow-yellow))",
         },
       },
       borderRadius: {
