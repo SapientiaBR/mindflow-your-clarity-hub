@@ -1,12 +1,11 @@
 import { motion } from 'framer-motion';
-import { CheckCircle2, Lightbulb, FolderKanban, FileText, TrendingUp, Clock, Zap, Target } from 'lucide-react';
+import { CheckCircle2, Lightbulb, FolderKanban, FileText, TrendingUp, Clock, Target } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
 import { useItems, useUpcomingTasks, useImportantItems, useGoals, useEvents } from '@/hooks/useItems';
 import DashboardCard from '@/components/dashboard/DashboardCard';
 import ParticleBackground from '@/components/dashboard/ParticleBackground';
 import TechGridBackground from '@/components/dashboard/TechGridBackground';
 import StatCard from '@/components/dashboard/StatCard';
-import MiniChart from '@/components/dashboard/MiniChart';
 import GoalsBar from '@/components/dashboard/GoalsBar';
 import EventsCalendarCard from '@/components/dashboard/EventsCalendarCard';
 import { format } from 'date-fns';
@@ -32,10 +31,6 @@ export default function Dashboard() {
   const notes = items?.filter(item => item.type === 'note') || [];
   const recentNotes = notes.slice(0, 4);
 
-  // Sample data for mini charts (in real app, calculate from actual data)
-  const taskTrendData = [3, 5, 4, 7, 6, 8, pendingTasks];
-  const ideaTrendData = [2, 4, 3, 5, 7, 6, ideas.length];
-
   const taskCount = pendingTasks;
   const ideaCount = ideas.length;
   const projectCount = activeProjects;
@@ -55,29 +50,16 @@ export default function Dashboard() {
 
         {/* Content */}
         <div className="relative z-10 p-6 space-y-6">
-          {/* Header */}
+          {/* Header - Compact */}
           <motion.header 
-            className="text-center py-4"
-            initial={{ opacity: 0, y: -20 }}
+            className="flex items-center gap-3 py-2"
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.4 }}
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 mb-4"
-            >
-              <Zap className="w-4 h-4 text-purple-400" />
-              <span className="text-xs text-purple-300 uppercase tracking-wider">Central de Controle</span>
-            </motion.div>
-            
-            <h1 className="text-4xl md:text-5xl font-display font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            <h1 className="text-xl font-display font-semibold text-foreground/80">
               Dashboard
             </h1>
-            <p className="text-muted-foreground mt-2">
-              Sua visão completa de produtividade
-            </p>
           </motion.header>
 
           {/* Goals Bar - Fixed at top */}
@@ -120,9 +102,9 @@ export default function Dashboard() {
 
           {/* Main Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Upcoming Tasks */}
+            {/* Tarefas */}
             <DashboardCard 
-              title="Agora" 
+              title="Tarefas" 
               icon={Clock} 
               count={taskCount}
               gradient="blue"
@@ -130,7 +112,7 @@ export default function Dashboard() {
             >
               <div className="space-y-3">
                 {upcomingTasks && upcomingTasks.length > 0 ? (
-                  upcomingTasks.slice(0, 4).map((task, index) => (
+                  upcomingTasks.slice(0, 5).map((task, index) => (
                     <motion.div 
                       key={task.id}
                       initial={{ opacity: 0, x: -10 }}
@@ -158,16 +140,7 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-              
-              {/* Mini trend chart */}
-              <div className="mt-4 pt-4 border-t border-white/5">
-                <p className="text-xs text-muted-foreground mb-2">Tendência semanal</p>
-                <MiniChart data={taskTrendData} color="cyan" height={50} />
-              </div>
             </DashboardCard>
-
-            {/* Events Calendar */}
-            <EventsCalendarCard events={events || []} />
 
             {/* Ideas */}
             <DashboardCard 
@@ -179,7 +152,7 @@ export default function Dashboard() {
             >
               <div className="space-y-3">
                 {ideas.length > 0 ? (
-                  ideas.slice(0, 4).map((idea, index) => (
+                  ideas.slice(0, 5).map((idea, index) => (
                     <motion.div 
                       key={idea.id}
                       initial={{ opacity: 0, x: -10 }}
@@ -202,13 +175,10 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-
-              {/* Mini trend chart */}
-              <div className="mt-4 pt-4 border-t border-white/5">
-                <p className="text-xs text-muted-foreground mb-2">Criação de ideias</p>
-                <MiniChart data={ideaTrendData} color="magenta" height={50} />
-              </div>
             </DashboardCard>
+
+            {/* Events Calendar - Right side */}
+            <EventsCalendarCard events={events || []} />
 
             {/* Projects */}
             <DashboardCard 

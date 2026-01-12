@@ -86,10 +86,7 @@ export default function Sidebar({ onSearchClick }: SidebarProps) {
           >
             <Search className="w-4 h-4" />
             {!collapsed && (
-              <>
-                <span className="flex-1 text-left">Buscar...</span>
-                <kbd className="text-xs bg-muted px-1.5 py-0.5 rounded">⌘K</kbd>
-              </>
+              <span className="flex-1 text-left">Buscar...</span>
             )}
           </Button>
         </div>
