@@ -70,15 +70,15 @@ export default function Dashboard() {
             <StatCard
               icon={CheckCircle2}
               value={pendingTasks}
-              label="Tarefas Pendentes"
+              label="✅ Tarefas Pendentes"
               trend={12}
-              color="orange"
+              color="green"
               delay={0.1}
             />
             <StatCard
               icon={FolderKanban}
               value={activeProjects}
-              label="Projetos Ativos"
+              label="📁 Projetos Ativos"
               trend={5}
               color="cyan"
               delay={0.2}
@@ -86,16 +86,16 @@ export default function Dashboard() {
             <StatCard
               icon={Lightbulb}
               value={rawIdeas}
-              label="Ideias para Desenvolver"
+              label="💡 Ideias para Desenvolver"
               trend={-3}
-              color="magenta"
+              color="yellow"
               delay={0.3}
             />
             <StatCard
               icon={FileText}
               value={noteCount}
-              label="Notas Criadas"
-              color="green"
+              label="📝 Notas Criadas"
+              color="magenta"
               delay={0.4}
             />
           </div>
@@ -104,10 +104,10 @@ export default function Dashboard() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Tarefas */}
             <DashboardCard 
-              title="Tarefas" 
+              title="✅ Tarefas" 
               icon={Clock} 
               count={taskCount}
-              gradient="blue"
+              gradient="green"
               navigateTo="/tasks"
             >
               <div className="space-y-3">
@@ -144,10 +144,10 @@ export default function Dashboard() {
 
             {/* Ideas */}
             <DashboardCard 
-              title="Ideias Ativas" 
+              title="💡 Ideias Ativas" 
               icon={Lightbulb} 
               count={ideaCount}
-              gradient="purple"
+              gradient="yellow"
               navigateTo="/ideas"
             >
               <div className="space-y-3">
@@ -182,10 +182,10 @@ export default function Dashboard() {
 
             {/* Projects */}
             <DashboardCard 
-              title="Projetos" 
+              title="📁 Projetos" 
               icon={FolderKanban} 
               count={projectCount}
-              gradient="green"
+              gradient="cyan"
               navigateTo="/projects"
             >
               <div className="space-y-3">
@@ -227,10 +227,10 @@ export default function Dashboard() {
 
             {/* Recent Notes */}
             <DashboardCard 
-              title="Fluxo de Pensamentos" 
+              title="📝 Fluxo de Pensamentos" 
               icon={FileText} 
               count={noteCount}
-              gradient="cyan"
+              gradient="purple"
               navigateTo="/timeline"
             >
               <div className="space-y-3">

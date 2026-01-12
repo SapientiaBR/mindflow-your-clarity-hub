@@ -7,7 +7,7 @@ interface StatCardProps {
   value: number;
   label: string;
   trend?: number;
-  color: 'cyan' | 'magenta' | 'purple' | 'green' | 'orange';
+  color: 'cyan' | 'magenta' | 'purple' | 'green' | 'orange' | 'yellow';
   delay?: number;
 }
 
@@ -46,6 +46,13 @@ const colorClasses = {
     text: 'text-orange-400',
     bg: 'bg-orange-500/10',
     iconBg: 'bg-orange-500/20',
+  },
+  yellow: {
+    glow: 'shadow-[0_0_30px_rgba(250,204,21,0.3)]',
+    border: 'border-yellow-500/30',
+    text: 'text-yellow-400',
+    bg: 'bg-yellow-500/10',
+    iconBg: 'bg-yellow-500/20',
   },
 };
 
@@ -87,6 +94,7 @@ export default function StatCard({ icon: Icon, value, label, trend, color, delay
                          color === 'magenta' ? '0 0 20px rgba(255,0,255,0.5)' :
                          color === 'purple' ? '0 0 20px rgba(139,92,246,0.5)' :
                          color === 'green' ? '0 0 20px rgba(16,185,129,0.5)' :
+                         color === 'yellow' ? '0 0 20px rgba(250,204,21,0.5)' :
                          '0 0 20px rgba(249,115,22,0.5)'
             }}
           >
@@ -123,7 +131,7 @@ export default function StatCard({ icon: Icon, value, label, trend, color, delay
       <div className={cn(
         'absolute top-0 right-0 w-16 h-16 opacity-20',
         'bg-gradient-to-bl from-current to-transparent rounded-tr-xl'
-      )} style={{ color: color === 'cyan' ? '#00FFFF' : color === 'magenta' ? '#FF00FF' : color === 'purple' ? '#8B5CF6' : color === 'green' ? '#10B981' : '#F97316' }} />
+      )} style={{ color: color === 'cyan' ? '#00FFFF' : color === 'magenta' ? '#FF00FF' : color === 'purple' ? '#8B5CF6' : color === 'green' ? '#10B981' : color === 'yellow' ? '#FACC15' : '#F97316' }} />
     </motion.div>
   );
 }
