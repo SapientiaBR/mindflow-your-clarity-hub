@@ -68,6 +68,9 @@ export function GlobalSearch({ isOpen, onClose, onEditItem }: GlobalSearchProps)
         task: '/tasks',
         idea: '/ideas',
         project: '/projects',
+        goal: '/goals',
+        event: '/events',
+        note: '/timeline',
         thought: '/timeline',
         insight: '/timeline',
         reflection: '/timeline'

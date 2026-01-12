@@ -8,6 +8,7 @@ import TechGridBackground from '@/components/dashboard/TechGridBackground';
 import StatCard from '@/components/dashboard/StatCard';
 import GoalsBar from '@/components/dashboard/GoalsBar';
 import EventsCalendarCard from '@/components/dashboard/EventsCalendarCard';
+import QuickNotesBoard from '@/components/dashboard/QuickNotesBoard';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -225,40 +226,8 @@ export default function Dashboard() {
               </div>
             </DashboardCard>
 
-            {/* Recent Notes */}
-            <DashboardCard 
-              title="📝 Fluxo de Pensamentos" 
-              icon={FileText} 
-              count={noteCount}
-              gradient="purple"
-              navigateTo="/timeline"
-            >
-              <div className="space-y-3">
-                {recentNotes.length > 0 ? (
-                  recentNotes.map((note, index) => (
-                    <motion.div 
-                      key={note.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 * index }}
-                      className="p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
-                    >
-                      <p className="text-sm text-foreground/90 line-clamp-2">
-                        {note.content}
-                      </p>
-                      <span className="text-xs text-muted-foreground mt-1 inline-block">
-                        {format(new Date(note.created_at), "dd MMM 'às' HH:mm", { locale: ptBR })}
-                      </span>
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Suas notas aparecerão aqui</p>
-                  </div>
-                )}
-              </div>
-            </DashboardCard>
+            {/* Quick Notes Board */}
+            <QuickNotesBoard />
           </div>
 
           {/* Important Items Section */}
