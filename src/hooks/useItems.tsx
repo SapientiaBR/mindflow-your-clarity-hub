@@ -204,3 +204,42 @@ export function useImportantItems() {
     enabled: !!user,
   });
 }
+
+export function useGoals() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['items', 'goals'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('items')
+        .select('*')
+        .eq('type', 'goal')
+        .neq('status', 'completed')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data as DatabaseItem[]).map(mapDatabaseItem);
+    },
+    enabled: !!user,
+  });
+}
+
+export function useEvents() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['items', 'events'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('items')
+        .select('*')
+        .eq('type', 'event')
+        .order('due_date', { ascending: true });
+
+      if (error) throw error;
+      return (data as DatabaseItem[]).map(mapDatabaseItem);
+    },
+    enabled: !!user,
+  });
+}
