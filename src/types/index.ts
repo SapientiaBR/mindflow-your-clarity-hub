@@ -18,6 +18,8 @@ export interface Item {
   is_important: boolean;
   position_x: number;
   position_y: number;
+  sort_order?: number;
+  progress?: number;
   created_at: string;
   updated_at: string;
 }
