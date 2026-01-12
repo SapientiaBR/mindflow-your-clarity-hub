@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   X,
+  Search,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -28,7 +29,11 @@ const navItems = [
   { path: '/mindmap', icon: Network, label: 'Mapa Mental' },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  onSearchClick?: () => void;
+}
+
+export default function Sidebar({ onSearchClick }: SidebarProps) {
   const location = useLocation();
   const { signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
@@ -67,6 +72,28 @@ export default function Sidebar() {
           {collapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
         </Button>
       </div>
+
+      {/* Search Button */}
+      {onSearchClick && (
+        <div className="px-4 pb-2">
+          <Button
+            variant="outline"
+            onClick={onSearchClick}
+            className={cn(
+              'w-full justify-start gap-3 text-muted-foreground border-dashed',
+              collapsed && 'justify-center'
+            )}
+          >
+            <Search className="w-4 h-4" />
+            {!collapsed && (
+              <>
+                <span className="flex-1 text-left">Buscar...</span>
+                <kbd className="text-xs bg-muted px-1.5 py-0.5 rounded">⌘K</kbd>
+              </>
+            )}
+          </Button>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
