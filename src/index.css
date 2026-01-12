@@ -230,6 +230,27 @@
     animation: slide-down 0.3s ease-out;
   }
 
+  .animate-pulse-fast {
+    animation: pulse-fast 1s ease-in-out infinite;
+  }
+
+  .animate-gradient-rotate {
+    animation: gradient-rotate 3s linear infinite;
+    background-size: 200% 200%;
+  }
+
+  .animate-float-particle {
+    animation: float-particle 4s ease-in-out infinite;
+  }
+
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+
+  .animate-flow-line {
+    animation: flow-line 2s linear infinite;
+  }
+
   @keyframes fade-in {
     from {
       opacity: 0;
@@ -274,6 +295,56 @@
     }
   }
 
+  @keyframes pulse-fast {
+    0%, 100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+
+  @keyframes gradient-rotate {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  @keyframes float-particle {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+      opacity: 0.5;
+    }
+    50% {
+      transform: translate(10px, -20px) scale(1.2);
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(139, 92, 246, 0.6);
+    }
+  }
+
+  @keyframes flow-line {
+    0% {
+      stroke-dashoffset: 100;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+
   /* Priority colors */
   .priority-low {
     @apply text-mindflow-green;
@@ -290,4 +361,44 @@
   .priority-urgent {
     @apply text-destructive;
   }
+}
+
+/* React Flow custom styles */
+.react-flow__node {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.react-flow__edge-path {
+  stroke: hsl(var(--mindflow-purple) / 0.5);
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: hsl(var(--mindflow-purple));
+  stroke-width: 3;
+}
+
+.react-flow__controls {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: transparent !important;
+  border: none !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.react-flow__controls-button:hover {
+  background: hsl(var(--muted)) !important;
+}
+
+.react-flow__minimap {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 12px !important;
 }
