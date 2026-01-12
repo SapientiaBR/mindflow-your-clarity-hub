@@ -1,13 +1,14 @@
 import { motion } from 'framer-motion';
 import { CheckCircle2, Lightbulb, FolderKanban, FileText, TrendingUp, Clock, Zap, Target } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
-import { useItems, useUpcomingTasks, useImportantItems } from '@/hooks/useItems';
+import { useItems, useUpcomingTasks, useImportantItems, useGoals, useEvents } from '@/hooks/useItems';
 import DashboardCard from '@/components/dashboard/DashboardCard';
 import ParticleBackground from '@/components/dashboard/ParticleBackground';
 import TechGridBackground from '@/components/dashboard/TechGridBackground';
 import StatCard from '@/components/dashboard/StatCard';
-import CircularProgress from '@/components/dashboard/CircularProgress';
 import MiniChart from '@/components/dashboard/MiniChart';
+import GoalsBar from '@/components/dashboard/GoalsBar';
+import EventsCalendarCard from '@/components/dashboard/EventsCalendarCard';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -15,12 +16,12 @@ export default function Dashboard() {
   const { items } = useItems();
   const { data: upcomingTasks } = useUpcomingTasks();
   const { data: importantItems } = useImportantItems();
+  const { data: goals } = useGoals();
+  const { data: events } = useEvents();
 
   // Filter and count items
   const tasks = items?.filter(item => item.type === 'task') || [];
   const pendingTasks = tasks.filter(t => t.status !== 'completed').length;
-  const completedTasks = tasks.filter(t => t.status === 'completed').length;
-  const completionRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
 
   const ideas = items?.filter(item => item.type === 'idea') || [];
   const rawIdeas = ideas.filter(i => i.status === 'raw').length;
@@ -42,17 +43,21 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="relative min-h-screen">
-        {/* Layered backgrounds */}
-        <div className="fixed inset-0 bg-gradient-to-br from-background via-background to-purple-950/20" />
-        <TechGridBackground />
-        <ParticleBackground />
+      <div className="relative min-h-screen overflow-hidden">
+        {/* Layered backgrounds - using absolute instead of fixed to not cover sidebar */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-purple-950/20" />
+        <div className="absolute inset-0">
+          <TechGridBackground />
+        </div>
+        <div className="absolute inset-0">
+          <ParticleBackground />
+        </div>
 
         {/* Content */}
-        <div className="relative z-10 p-6 space-y-8">
+        <div className="relative z-10 p-6 space-y-6">
           {/* Header */}
           <motion.header 
-            className="text-center py-6"
+            className="text-center py-4"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -75,8 +80,11 @@ export default function Dashboard() {
             </p>
           </motion.header>
 
-          {/* Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {/* Goals Bar - Fixed at top */}
+          <GoalsBar goals={goals || []} />
+
+          {/* Stats Row - 4 cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard
               icon={CheckCircle2}
               value={pendingTasks}
@@ -108,27 +116,10 @@ export default function Dashboard() {
               color="green"
               delay={0.4}
             />
-            
-            {/* Circular Progress Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-              className="relative p-4 rounded-xl border backdrop-blur-xl bg-black/40 border-purple-500/30 shadow-[0_0_30px_rgba(139,92,246,0.3)] flex flex-col items-center justify-center"
-            >
-              <CircularProgress 
-                value={completionRate} 
-                size={80} 
-                strokeWidth={6}
-                color="purple"
-                label="Conclusão"
-                delay={0.6}
-              />
-            </motion.div>
           </div>
 
           {/* Main Grid */}
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Upcoming Tasks */}
             <DashboardCard 
               title="Agora" 
@@ -174,6 +165,9 @@ export default function Dashboard() {
                 <MiniChart data={taskTrendData} color="cyan" height={50} />
               </div>
             </DashboardCard>
+
+            {/* Events Calendar */}
+            <EventsCalendarCard events={events || []} />
 
             {/* Ideas */}
             <DashboardCard 
