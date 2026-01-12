@@ -11,10 +11,11 @@ interface Particle {
 }
 
 const COLORS = [
-  'rgba(59, 130, 246, 0.6)',  // blue
+  'rgba(0, 255, 255, 0.6)',   // neon cyan
+  'rgba(255, 0, 255, 0.5)',   // neon magenta
   'rgba(139, 92, 246, 0.6)',  // purple
-  'rgba(16, 185, 129, 0.6)',  // green
-  'rgba(6, 182, 212, 0.5)',   // cyan
+  'rgba(16, 185, 129, 0.5)',  // green
+  'rgba(59, 130, 246, 0.5)',  // blue
 ];
 
 export default function ParticleBackground() {
@@ -37,15 +38,15 @@ export default function ParticleBackground() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Initialize particles
-    const particleCount = 50;
+    // Initialize particles - more particles for tech look
+    const particleCount = 80;
     particlesRef.current = Array.from({ length: particleCount }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.5,
-      vy: (Math.random() - 0.5) * 0.5,
-      size: Math.random() * 3 + 1,
-      opacity: Math.random() * 0.5 + 0.2,
+      vx: (Math.random() - 0.5) * 0.8,
+      vy: (Math.random() - 0.5) * 0.8,
+      size: Math.random() * 2.5 + 0.5,
+      opacity: Math.random() * 0.6 + 0.3,
       color: COLORS[Math.floor(Math.random() * COLORS.length)],
     }));
 
@@ -89,12 +90,13 @@ export default function ParticleBackground() {
           const dy = p1.y - p2.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < 120) {
+          if (distance < 150) {
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(139, 92, 246, ${0.15 * (1 - distance / 120)})`;
-            ctx.lineWidth = 0.5;
+            // Use cyan for connections
+            ctx.strokeStyle = `rgba(0, 255, 255, ${0.2 * (1 - distance / 150)})`;
+            ctx.lineWidth = 0.8;
             ctx.stroke();
           }
         });
@@ -117,7 +119,7 @@ export default function ParticleBackground() {
     <canvas
       ref={canvasRef}
       className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ opacity: 0.6 }}
+      style={{ opacity: 0.7 }}
     />
   );
 }
