@@ -54,7 +54,7 @@ export default function EventsCalendarCard({ events }: EventsCalendarCardProps) 
         boxShadow: '0 0 30px rgba(249, 115, 22, 0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
         border: '1px solid rgba(249, 115, 22, 0.3)',
       }}
-      onClick={() => navigate('/timeline')}
+      onClick={() => navigate('/events')}
     >
       {/* Glow effect */}
       <div 
