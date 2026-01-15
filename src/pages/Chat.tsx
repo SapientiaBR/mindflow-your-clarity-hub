@@ -55,9 +55,9 @@ export default function Chat() {
 
   return (
     <AppLayout>
-      <div className="flex-1 flex flex-col h-full">
+      <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <header className="p-4 border-b border-border">
+        <header className="shrink-0 p-4 border-b border-border">
           <h1 className="text-2xl font-display font-bold gradient-text">Chat</h1>
           <p className="text-sm text-muted-foreground">Registre seus pensamentos rapidamente</p>
         </header>
@@ -95,68 +95,71 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Type selector popup */}
-        <AnimatePresence>
-          {showTypeMenu && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="absolute bottom-24 md:bottom-20 left-4 right-4 md:left-auto md:right-auto md:w-80 glass-card rounded-2xl p-4 z-50"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-medium">Selecione o tipo</span>
-                <Button variant="ghost" size="icon" onClick={() => setShowTypeMenu(false)}>
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {ITEM_TYPES.map((type) => (
-                  <button
-                    key={type.type}
-                    onClick={() => {
-                      setSelectedType(type.type);
-                      setShowTypeMenu(false);
-                    }}
-                    className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${
-                      selectedType === type.type
-                        ? `${type.bgClass} border-current`
-                        : 'border-border hover:bg-muted'
-                    }`}
-                  >
-                    <span className="text-xl">{type.icon}</span>
-                    <span className="text-sm font-medium">{type.label}</span>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Input area with relative container for popup */}
+        <div className="relative shrink-0">
+          {/* Type selector popup */}
+          <AnimatePresence>
+            {showTypeMenu && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute bottom-full left-4 right-4 md:left-4 md:right-auto md:w-80 mb-2 glass-card rounded-2xl p-4 z-50"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-medium">Selecione o tipo</span>
+                  <Button variant="ghost" size="icon" onClick={() => setShowTypeMenu(false)}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {ITEM_TYPES.map((type) => (
+                    <button
+                      key={type.type}
+                      onClick={() => {
+                        setSelectedType(type.type);
+                        setShowTypeMenu(false);
+                      }}
+                      className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${
+                        selectedType === type.type
+                          ? `${type.bgClass} border-current`
+                          : 'border-border hover:bg-muted'
+                      }`}
+                    >
+                      <span className="text-xl">{type.icon}</span>
+                      <span className="text-sm font-medium">{type.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        {/* Input area */}
-        <form onSubmit={handleSubmit} className="p-4 border-t border-border bg-background/80 backdrop-blur-xl">
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowTypeMenu(!showTypeMenu)}
-              className={`shrink-0 ${currentTypeConfig.bgClass} border-current`}
-            >
-              <span className="text-lg mr-1">{currentTypeConfig.icon}</span>
-              <span className="hidden sm:inline">{currentTypeConfig.label}</span>
-              <Plus className="w-4 h-4 ml-1 sm:hidden" />
-            </Button>
-            <Input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Digite seu pensamento..."
-              className="flex-1 bg-muted/50"
-            />
-            <Button type="submit" disabled={!message.trim() || createItem.isPending} className="bg-gradient-primary">
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-        </form>
+          {/* Input form */}
+          <form onSubmit={handleSubmit} className="p-4 border-t border-border bg-background/80 backdrop-blur-xl">
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowTypeMenu(!showTypeMenu)}
+                className={`shrink-0 ${currentTypeConfig.bgClass} border-current`}
+              >
+                <span className="text-lg mr-1">{currentTypeConfig.icon}</span>
+                <span className="hidden sm:inline">{currentTypeConfig.label}</span>
+                <Plus className="w-4 h-4 ml-1 sm:hidden" />
+              </Button>
+              <Input
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Digite seu pensamento..."
+                className="flex-1 bg-muted/50"
+              />
+              <Button type="submit" disabled={!message.trim() || createItem.isPending} className="bg-gradient-primary">
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </AppLayout>
   );
