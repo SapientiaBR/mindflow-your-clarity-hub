@@ -23,9 +23,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar onSearchClick={() => setIsSearchOpen(true)} />
-      <main className="flex-1 flex flex-col min-h-screen pb-24 md:pb-0">
+      <main className="flex-1 flex flex-col h-full overflow-hidden pb-24 md:pb-0">
         {children}
       </main>
       <MobileNav />
