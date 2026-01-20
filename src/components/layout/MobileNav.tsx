@@ -6,6 +6,7 @@ import {
   Lightbulb,
   CheckSquare,
   Network,
+  CalendarDays,
 } from 'lucide-react';
 
 const navItems = [
@@ -13,6 +14,7 @@ const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/ideas', icon: Lightbulb, label: 'Ideias' },
   { path: '/tasks', icon: CheckSquare, label: 'Tarefas' },
+  { path: '/events', icon: CalendarDays, label: 'Eventos' },
   { path: '/mindmap', icon: Network, label: 'Mapa' },
 ];
 

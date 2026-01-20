@@ -122,7 +122,7 @@ export default function EventsCalendarCard({ events }: EventsCalendarCardProps) 
             {selectedDateEvents.map((event) => (
               <div key={event.id} className="flex items-center gap-2 text-xs text-foreground">
                 <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
-                <span className="truncate">{event.title}</span>
+                <span className="truncate">{event.title || event.content}</span>
               </div>
             ))}
           </div>
@@ -132,35 +132,37 @@ export default function EventsCalendarCard({ events }: EventsCalendarCardProps) 
       {/* Upcoming events */}
       <div className="relative space-y-2">
         <p className="text-xs text-muted-foreground font-medium">Próximos Eventos</p>
-        {upcomingEvents.length === 0 ? (
-          <p className="text-xs text-muted-foreground/50">Nenhum evento agendado</p>
-        ) : (
-          <div className="space-y-2">
-            {upcomingEvents.slice(0, 3).map((event) => (
-              <motion.div
-                key={event.id}
-                whileHover={{ x: 4 }}
-                className="flex items-center gap-3 p-2 rounded-lg bg-background/30 border border-orange-500/10"
-              >
-                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-orange-500/20 flex flex-col items-center justify-center">
-                  <span className="text-[10px] text-orange-400 font-medium uppercase">
-                    {format(parseISO(event.due_date!), 'MMM', { locale: ptBR })}
-                  </span>
-                  <span className="text-sm text-orange-300 font-bold leading-none">
-                    {format(parseISO(event.due_date!), 'd')}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground font-medium truncate">{event.title}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="w-3 h-3" />
-                    <span>{format(parseISO(event.due_date!), 'HH:mm')}</span>
+        <div className="max-h-[150px] overflow-y-auto space-y-2">
+          {upcomingEvents.length === 0 ? (
+            <p className="text-xs text-muted-foreground/50">Nenhum evento agendado</p>
+          ) : (
+            <>
+              {upcomingEvents.slice(0, 3).map((event) => (
+                <motion.div
+                  key={event.id}
+                  whileHover={{ x: 4 }}
+                  className="flex items-center gap-3 p-2 rounded-lg bg-background/30 border border-orange-500/10"
+                >
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-orange-500/20 flex flex-col items-center justify-center">
+                    <span className="text-[10px] text-orange-400 font-medium uppercase">
+                      {format(parseISO(event.due_date!), 'MMM', { locale: ptBR })}
+                    </span>
+                    <span className="text-sm text-orange-300 font-bold leading-none">
+                      {format(parseISO(event.due_date!), 'd')}
+                    </span>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground font-medium truncate">{event.title || event.content}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="w-3 h-3" />
+                      <span>{format(parseISO(event.due_date!), 'HH:mm')}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </>
+          )}
+        </div>
       </div>
     </motion.div>
   );
