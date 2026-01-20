@@ -4,16 +4,20 @@ import { useItems } from '@/hooks/useItems';
 import { ItemType, ITEM_TYPES, getItemTypeConfig } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Plus, X } from 'lucide-react';
+import { Send, Plus, X, CalendarIcon } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 export default function Chat() {
   const [message, setMessage] = useState('');
   const [selectedType, setSelectedType] = useState<ItemType>('note');
   const [showTypeMenu, setShowTypeMenu] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const { items, createItem } = useItems();
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -34,6 +38,9 @@ export default function Chat() {
       await createItem.mutateAsync({
         type: selectedType,
         content: message.trim(),
+        ...(selectedType === 'event' && selectedDate && {
+          due_date: selectedDate.toISOString(),
+        }),
       });
       
       const typeConfig = getItemTypeConfig(selectedType);
@@ -42,6 +49,7 @@ export default function Chat() {
         duration: 2000,
       });
       setMessage('');
+      setSelectedDate(undefined);
     } catch (error) {
       toast({
         title: 'Erro ao salvar',
@@ -83,6 +91,12 @@ export default function Chat() {
                         </span>
                       </div>
                       <p className="text-foreground">{item.content}</p>
+                      {item.due_date && item.type === 'event' && (
+                        <div className="flex items-center gap-1 text-xs text-orange-400 mt-2">
+                          <CalendarIcon className="w-3 h-3" />
+                          {format(new Date(item.due_date), "dd/MM/yyyy", { locale: ptBR })}
+                        </div>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1 text-right">
                       {format(new Date(item.created_at), "HH:mm", { locale: ptBR })}
@@ -119,6 +133,9 @@ export default function Chat() {
                       onClick={() => {
                         setSelectedType(type.type);
                         setShowTypeMenu(false);
+                        if (type.type !== 'event') {
+                          setSelectedDate(undefined);
+                        }
                       }}
                       className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${
                         selectedType === type.type
@@ -148,6 +165,46 @@ export default function Chat() {
                 <span className="hidden sm:inline">{currentTypeConfig.label}</span>
                 <Plus className="w-4 h-4 ml-1 sm:hidden" />
               </Button>
+              
+              {/* Date picker - aparece apenas para eventos */}
+              {selectedType === 'event' && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        "shrink-0 justify-start text-left",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4 text-orange-400" />
+                      <span className="hidden sm:inline">
+                        {selectedDate 
+                          ? format(selectedDate, "dd/MM/yyyy", { locale: ptBR })
+                          : "Data"
+                        }
+                      </span>
+                      <span className="sm:hidden">
+                        {selectedDate 
+                          ? format(selectedDate, "dd/MM", { locale: ptBR })
+                          : "📅"
+                        }
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      locale={ptBR}
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
+
               <Input
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
