@@ -12,6 +12,7 @@ import {
   FolderKanban,
   Clock,
   Network,
+  CalendarDays,
   LogOut,
   Menu,
   X,
@@ -25,6 +26,7 @@ const navItems = [
   { path: '/ideas', icon: Lightbulb, label: 'Ideias' },
   { path: '/tasks', icon: CheckSquare, label: 'Tarefas' },
   { path: '/projects', icon: FolderKanban, label: 'Projetos' },
+  { path: '/events', icon: CalendarDays, label: 'Eventos' },
   { path: '/timeline', icon: Clock, label: 'Timeline' },
   { path: '/mindmap', icon: Network, label: 'Mapa Mental' },
 ];
