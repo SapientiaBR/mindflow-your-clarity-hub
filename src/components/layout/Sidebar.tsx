@@ -18,7 +18,7 @@ import {
   X,
   Search,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const navItems = [
   { path: '/', icon: MessageSquare, label: 'Chat' },
@@ -38,7 +38,14 @@ interface SidebarProps {
 export default function Sidebar({ onSearchClick }: SidebarProps) {
   const location = useLocation();
   const { signOut } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebar-collapsed');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed));
+  }, [collapsed]);
 
   return (
     <motion.aside
