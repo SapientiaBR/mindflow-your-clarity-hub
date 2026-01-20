@@ -111,9 +111,9 @@ export default function Dashboard() {
               gradient="green"
               navigateTo="/tasks"
             >
-              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+              <div className="space-y-2">
                 {upcomingTasks && upcomingTasks.length > 0 ? (
-                  upcomingTasks.slice(0, 5).map((task, index) => (
+                  upcomingTasks.slice(0, 4).map((task, index) => (
                     <motion.div 
                       key={task.id}
                       initial={{ opacity: 0, x: -10 }}
@@ -122,13 +122,13 @@ export default function Dashboard() {
                       className="flex items-center justify-between p-2 md:p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
                     >
                       <div className="flex items-center gap-2 md:gap-3">
-                        <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,255,255,0.6)]" />
-                        <span className="text-xs md:text-sm text-foreground/90 truncate max-w-[150px] md:max-w-[200px]">
+                        <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,255,255,0.6)] shrink-0" />
+                        <span className="text-xs md:text-sm text-foreground/90">
                           {task.content}
                         </span>
                       </div>
                       {task.due_date && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
                           {format(new Date(task.due_date), 'dd MMM', { locale: ptBR })}
                         </span>
                       )}
@@ -151,9 +151,9 @@ export default function Dashboard() {
               gradient="yellow"
               navigateTo="/ideas"
             >
-              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+              <div className="space-y-2">
                 {ideas.length > 0 ? (
-                  ideas.slice(0, 5).map((idea, index) => (
+                  ideas.slice(0, 3).map((idea, index) => (
                     <motion.div 
                       key={idea.id}
                       initial={{ opacity: 0, x: -10 }}
@@ -189,7 +189,7 @@ export default function Dashboard() {
               gradient="cyan"
               navigateTo="/projects"
             >
-              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+              <div className="space-y-2">
                 {projects.length > 0 ? (
                   projects.slice(0, 4).map((project, index) => (
                     <motion.div 
