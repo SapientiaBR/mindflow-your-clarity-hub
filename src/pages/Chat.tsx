@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Plus, X, CalendarIcon } from 'lucide-react';
+import { Send, Plus, X, CalendarIcon, Clock } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -18,6 +20,8 @@ export default function Chat() {
   const [selectedType, setSelectedType] = useState<ItemType>('note');
   const [showTypeMenu, setShowTypeMenu] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedHour, setSelectedHour] = useState('09');
+  const [selectedMinute, setSelectedMinute] = useState('00');
   const { items, createItem } = useItems();
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -35,12 +39,17 @@ export default function Chat() {
     if (!message.trim()) return;
 
     try {
+      let eventDateTime: string | undefined;
+      if (selectedType === 'event' && selectedDate) {
+        const combined = new Date(selectedDate);
+        combined.setHours(parseInt(selectedHour), parseInt(selectedMinute), 0, 0);
+        eventDateTime = combined.toISOString();
+      }
+
       await createItem.mutateAsync({
         type: selectedType,
         content: message.trim(),
-        ...(selectedType === 'event' && selectedDate && {
-          due_date: selectedDate.toISOString(),
-        }),
+        ...(eventDateTime && { due_date: eventDateTime }),
       });
       
       const typeConfig = getItemTypeConfig(selectedType);
@@ -50,6 +59,8 @@ export default function Chat() {
       });
       setMessage('');
       setSelectedDate(undefined);
+      setSelectedHour('09');
+      setSelectedMinute('00');
     } catch (error) {
       toast({
         title: 'Erro ao salvar',
@@ -92,9 +103,15 @@ export default function Chat() {
                       </div>
                       <p className="text-foreground">{item.content}</p>
                       {item.due_date && item.type === 'event' && (
-                        <div className="flex items-center gap-1 text-xs text-orange-400 mt-2">
-                          <CalendarIcon className="w-3 h-3" />
-                          {format(new Date(item.due_date), "dd/MM/yyyy", { locale: ptBR })}
+                        <div className="flex items-center gap-2 text-xs text-orange-400 mt-2">
+                          <div className="flex items-center gap-1">
+                            <CalendarIcon className="w-3 h-3" />
+                            {format(new Date(item.due_date), "dd/MM/yyyy", { locale: ptBR })}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {format(new Date(item.due_date), "HH:mm", { locale: ptBR })}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -193,7 +210,7 @@ export default function Chat() {
                       </span>
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto p-0 bg-popover" align="start">
                     <Calendar
                       mode="single"
                       selected={selectedDate}
@@ -201,6 +218,32 @@ export default function Chat() {
                       locale={ptBR}
                       className="pointer-events-auto"
                     />
+                    <div className="border-t border-border p-3">
+                      <Label className="text-xs text-muted-foreground mb-2 block">Horário</Label>
+                      <div className="flex items-center gap-2">
+                        <Select value={selectedHour} onValueChange={setSelectedHour}>
+                          <SelectTrigger className="w-20">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            {Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')).map(h => (
+                              <SelectItem key={h} value={h}>{h}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <span className="text-muted-foreground">:</span>
+                        <Select value={selectedMinute} onValueChange={setSelectedMinute}>
+                          <SelectTrigger className="w-20">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(m => (
+                              <SelectItem key={m} value={m}>{m}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </PopoverContent>
                 </Popover>
               )}
