@@ -52,7 +52,7 @@ export default function Sidebar({ onSearchClick }: SidebarProps) {
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       className={cn(
-        'hidden md:flex flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300',
+        'hidden md:flex flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 relative z-50',
         collapsed ? 'w-20' : 'w-64'
       )}
     >
