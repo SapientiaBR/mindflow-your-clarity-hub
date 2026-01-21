@@ -1,16 +1,21 @@
+import { useState, useMemo, ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Lightbulb, FolderKanban, FileText, TrendingUp, Clock, Target } from 'lucide-react';
+import { CheckCircle2, Lightbulb, FolderKanban, FileText, TrendingUp, RotateCcw } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
 import { useItems, useUpcomingTasks, useImportantItems, useGoals, useEvents } from '@/hooks/useItems';
-import DashboardCard from '@/components/dashboard/DashboardCard';
+import DraggableDashboardCard from '@/components/dashboard/DraggableDashboardCard';
 import ParticleBackground from '@/components/dashboard/ParticleBackground';
 import TechGridBackground from '@/components/dashboard/TechGridBackground';
 import StatCard from '@/components/dashboard/StatCard';
 import GoalsBar from '@/components/dashboard/GoalsBar';
 import EventsCalendarCard from '@/components/dashboard/EventsCalendarCard';
 import QuickNotesBoard from '@/components/dashboard/QuickNotesBoard';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import TasksCard from '@/components/dashboard/TasksCard';
+import IdeasCard from '@/components/dashboard/IdeasCard';
+import ProjectsCard from '@/components/dashboard/ProjectsCard';
+import { useDashboardLayout, DashboardCardId } from '@/hooks/useDashboardLayout';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Dashboard() {
   const { items } = useItems();
@@ -18,6 +23,12 @@ export default function Dashboard() {
   const { data: importantItems } = useImportantItems();
   const { data: goals } = useGoals();
   const { data: events } = useEvents();
+  const { toast } = useToast();
+
+  // Drag-and-drop state
+  const { cardOrder, moveCard, resetToDefault, isLoaded } = useDashboardLayout();
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // Filter and count items
   const tasks = items?.filter(item => item.type === 'task') || [];
@@ -30,18 +41,67 @@ export default function Dashboard() {
   const activeProjects = projects.filter(p => p.status === 'active' || p.status === 'in_progress').length;
   
   const notes = items?.filter(item => item.type === 'note') || [];
-  const recentNotes = notes.slice(0, 4);
+  const noteCount = notes.length;
 
   const taskCount = pendingTasks;
   const ideaCount = ideas.length;
   const projectCount = activeProjects;
-  const noteCount = notes.length;
+
+  // Card components map
+  const cardComponents: Record<DashboardCardId, ReactNode> = useMemo(() => ({
+    tasks: <TasksCard tasks={upcomingTasks} taskCount={taskCount} />,
+    ideas: <IdeasCard ideas={ideas} ideaCount={ideaCount} />,
+    events: <EventsCalendarCard events={events || []} />,
+    projects: <ProjectsCard projects={projects} projectCount={projectCount} />,
+    notes: <QuickNotesBoard />,
+  }), [upcomingTasks, taskCount, ideas, ideaCount, events, projects, projectCount]);
+
+  // Drag handlers
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (index: number) => {
+    if (draggedIndex !== null && draggedIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragEnd = () => {
+    if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
+      moveCard(draggedIndex, dragOverIndex);
+      toast({
+        title: "Layout atualizado!",
+        description: "Sua preferência foi salva.",
+      });
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleResetLayout = () => {
+    resetToDefault();
+    toast({
+      title: "Layout restaurado!",
+      description: "Dashboard voltou ao layout padrão.",
+    });
+  };
+
+  if (!isLoaded) {
+    return (
+      <AppLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">Carregando...</div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
       <div className="relative min-h-screen overflow-y-auto pb-20 md:pb-6">
         {/* Layered backgrounds - z-0 to stay behind sidebar */}
-        <div className="fixed inset-0 bg-gradient-to-br from-background via-background to-purple-950/20 pointer-events-none z-0" />
+        <div className="fixed inset-0 bg-gradient-to-br from-background via-background to-primary/5 pointer-events-none z-0" />
         <div className="fixed inset-0 pointer-events-none z-0">
           <TechGridBackground />
         </div>
@@ -51,9 +111,9 @@ export default function Dashboard() {
 
         {/* Content */}
         <div className="relative z-10 p-4 md:p-6 space-y-4 md:space-y-6">
-          {/* Header - Compact */}
+          {/* Header - Compact with Reset Button */}
           <motion.header 
-            className="flex items-center gap-3 py-2"
+            className="flex items-center justify-between gap-3 py-2"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
@@ -61,6 +121,15 @@ export default function Dashboard() {
             <h1 className="text-xl font-display font-semibold text-foreground/80">
               Dashboard
             </h1>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleResetLayout}
+              className="text-muted-foreground hover:text-foreground gap-2"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span className="hidden sm:inline">Resetar Layout</span>
+            </Button>
           </motion.header>
 
           {/* Goals Bar - Fixed at top */}
@@ -101,135 +170,22 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Main Grid */}
+          {/* Main Grid - Draggable Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-start auto-rows-min">
-            {/* Tarefas */}
-            <DashboardCard 
-              title="✅ Tarefas" 
-              icon={Clock} 
-              count={taskCount}
-              gradient="green"
-              navigateTo="/tasks"
-            >
-              <div className="space-y-2">
-                {upcomingTasks && upcomingTasks.length > 0 ? (
-                  upcomingTasks.slice(0, 4).map((task, index) => (
-                    <motion.div 
-                      key={task.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 * index }}
-                      className="p-2 md:p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
-                    >
-                      <div className="flex items-start gap-2 md:gap-3">
-                        <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,255,255,0.6)] shrink-0 mt-1.5" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs md:text-sm text-foreground/90 whitespace-normal break-words leading-snug">
-                            {task.content}
-                          </p>
-                          {task.due_date && (
-                            <span className="text-xs text-muted-foreground mt-1 inline-block">
-                              {format(new Date(task.due_date), 'dd MMM', { locale: ptBR })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className="text-center py-4 text-muted-foreground">
-                    <Target className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                    <p className="text-xs md:text-sm">Nenhuma tarefa pendente</p>
-                  </div>
-                )}
-              </div>
-            </DashboardCard>
-
-            {/* Ideas */}
-            <DashboardCard 
-              title="💡 Ideias Ativas" 
-              icon={Lightbulb} 
-              count={ideaCount}
-              gradient="yellow"
-              navigateTo="/ideas"
-            >
-              <div className="space-y-2">
-                {ideas.length > 0 ? (
-                  ideas.slice(0, 3).map((idea, index) => (
-                    <motion.div 
-                      key={idea.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 * index }}
-                      className="p-2 md:p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
-                    >
-                      <p className="text-xs md:text-sm text-foreground/90 line-clamp-2">
-                        {idea.content}
-                      </p>
-                      <span className="text-xs text-purple-400 mt-1 inline-block">
-                        {idea.status === 'raw' ? '💡 Bruta' : idea.status === 'evolving' ? '🌱 Evoluindo' : '🚀 Em progresso'}
-                      </span>
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className="text-center py-4 text-muted-foreground">
-                    <Lightbulb className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                    <p className="text-xs md:text-sm">Capture suas primeiras ideias</p>
-                  </div>
-                )}
-              </div>
-            </DashboardCard>
-
-            {/* Events Calendar - Right side */}
-            <EventsCalendarCard events={events || []} />
-
-            {/* Projects */}
-            <DashboardCard 
-              title="📁 Projetos" 
-              icon={FolderKanban} 
-              count={projectCount}
-              gradient="cyan"
-              navigateTo="/projects"
-            >
-              <div className="space-y-2">
-                {projects.length > 0 ? (
-                  projects.slice(0, 4).map((project, index) => (
-                    <motion.div 
-                      key={project.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 * index }}
-                      className="p-2 md:p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs md:text-sm font-medium text-foreground/90 truncate">
-                          {project.title || project.content}
-                        </span>
-                        <span className="text-xs text-emerald-400">
-                          {project.progress || 0}%
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <motion.div 
-                          className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${project.progress || 0}%` }}
-                          transition={{ duration: 1, delay: 0.2 * index }}
-                        />
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className="text-center py-4 text-muted-foreground">
-                    <FolderKanban className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                    <p className="text-xs md:text-sm">Crie seu primeiro projeto</p>
-                  </div>
-                )}
-              </div>
-            </DashboardCard>
-
-            {/* Quick Notes Board */}
-            <QuickNotesBoard />
+            {cardOrder.map((cardId, index) => (
+              <DraggableDashboardCard
+                key={cardId}
+                id={cardId}
+                index={index}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+                isDragging={draggedIndex === index}
+                isDraggedOver={dragOverIndex === index}
+              >
+                {cardComponents[cardId]}
+              </DraggableDashboardCard>
+            ))}
           </div>
 
           {/* Important Items Section */}
@@ -241,7 +197,7 @@ export default function Dashboard() {
               className="mt-8"
             >
               <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="w-5 h-5 text-pink-400" />
+                <TrendingUp className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-display font-semibold text-foreground">Prioridades</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -251,10 +207,10 @@ export default function Dashboard() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.9 + index * 0.1 }}
-                    className="p-4 rounded-xl bg-gradient-to-br from-pink-500/10 to-purple-500/10 border border-pink-500/20 hover:border-pink-500/40 transition-all"
+                    className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 hover:border-primary/40 transition-all"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 rounded-full bg-pink-400 shadow-[0_0_8px_rgba(236,72,153,0.6)] mt-2" />
+                      <div className="w-2 h-2 rounded-full bg-primary shadow-lg mt-2" />
                       <div>
                         <p className="text-sm text-foreground/90">{item.content}</p>
                         <span className="text-xs text-muted-foreground capitalize">{item.type}</span>
