@@ -13,7 +13,7 @@ import { TagInput } from '@/components/tags/TagInput';
 import { Item, ItemType } from '@/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CalendarIcon, Trash2 } from 'lucide-react';
+import { CalendarIcon, Trash2, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -42,6 +42,8 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
   const [priority, setPriority] = useState<string>('medium');
   const [status, setStatus] = useState<string>('active');
   const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [hour, setHour] = useState('09');
+  const [minute, setMinute] = useState('00');
   const [progress, setProgress] = useState(0);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
@@ -53,7 +55,16 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
       setIsImportant(item.is_important || false);
       setPriority(item.priority || 'medium');
       setStatus(item.status || 'active');
-      setDueDate(item.due_date ? new Date(item.due_date) : undefined);
+      if (item.due_date) {
+        const date = new Date(item.due_date);
+        setDueDate(date);
+        setHour(date.getHours().toString().padStart(2, '0'));
+        setMinute(date.getMinutes().toString().padStart(2, '0'));
+      } else {
+        setDueDate(undefined);
+        setHour('09');
+        setMinute('00');
+      }
       setProgress(item.progress || 0);
     }
   }, [item]);
@@ -67,17 +78,29 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
       is_important: isImportant,
     };
 
+    if (item.type === 'task' || item.type === 'event') {
+      if (dueDate) {
+        const combined = new Date(dueDate);
+        combined.setHours(parseInt(hour), parseInt(minute), 0, 0);
+        updates.due_date = combined.toISOString();
+      } else {
+        updates.due_date = undefined;
+      }
+    }
+
     if (item.type === 'task') {
       updates.priority = priority as any;
-      updates.due_date = dueDate?.toISOString();
     }
 
     if (item.type === 'idea') {
       updates.status = status as any;
     }
 
-    if (item.type === 'project') {
+    if (item.type === 'project' || item.type === 'event') {
       updates.title = title;
+    }
+
+    if (item.type === 'project') {
       updates.progress = progress;
     }
 
@@ -109,14 +132,14 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {/* Title for projects */}
-            {item.type === 'project' && (
+            {/* Title for projects and events */}
+            {(item.type === 'project' || item.type === 'event') && (
               <div className="space-y-2">
                 <Label>Título</Label>
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Nome do projeto"
+                  placeholder={item.type === 'project' ? "Nome do projeto" : "Nome do evento"}
                 />
               </div>
             )}
@@ -144,50 +167,86 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
               <Switch checked={isImportant} onCheckedChange={setIsImportant} />
             </div>
 
-            {/* Task-specific fields */}
+            {/* Task-specific priority field */}
             {item.type === 'task' && (
-              <>
-                <div className="space-y-2">
-                  <Label>Prioridade</Label>
-                  <Select value={priority} onValueChange={setPriority}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">🟢 Baixa</SelectItem>
-                      <SelectItem value="medium">🟡 Média</SelectItem>
-                      <SelectItem value="high">🟠 Alta</SelectItem>
-                      <SelectItem value="urgent">🔴 Urgente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label>Prioridade</Label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="low">🟢 Baixa</SelectItem>
+                    <SelectItem value="medium">🟡 Média</SelectItem>
+                    <SelectItem value="high">🟠 Alta</SelectItem>
+                    <SelectItem value="urgent">🔴 Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-                <div className="space-y-2">
-                  <Label>Data de Vencimento</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !dueDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dueDate ? format(dueDate, "PPP", { locale: ptBR }) : "Selecionar data"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={dueDate}
-                        onSelect={setDueDate}
-                        locale={ptBR}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </>
+            {/* Date and time fields for tasks and events */}
+            {(item.type === 'task' || item.type === 'event') && (
+              <div className="space-y-2">
+                <Label>{item.type === 'event' ? 'Data e Horário' : 'Data de Vencimento'}</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dueDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dueDate ? (
+                        <>
+                          {format(dueDate, "PPP", { locale: ptBR })}
+                          <Clock className="ml-2 h-4 w-4" />
+                          <span className="ml-1">{hour}:{minute}</span>
+                        </>
+                      ) : (
+                        "Selecionar data"
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-popover" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dueDate}
+                      onSelect={setDueDate}
+                      locale={ptBR}
+                      className="pointer-events-auto"
+                    />
+                    <div className="border-t border-border p-3">
+                      <Label className="text-xs text-muted-foreground mb-2 block">Horário</Label>
+                      <div className="flex items-center gap-2">
+                        <Select value={hour} onValueChange={setHour}>
+                          <SelectTrigger className="w-20">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            {Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')).map(h => (
+                              <SelectItem key={h} value={h}>{h}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <span className="text-muted-foreground">:</span>
+                        <Select value={minute} onValueChange={setMinute}>
+                          <SelectTrigger className="w-20">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(m => (
+                              <SelectItem key={m} value={m}>{m}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             )}
 
             {/* Idea-specific fields */}
