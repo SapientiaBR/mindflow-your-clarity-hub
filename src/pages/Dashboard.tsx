@@ -1,6 +1,6 @@
 import { useState, useMemo, ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Lightbulb, FolderKanban, FileText, TrendingUp, RotateCcw } from 'lucide-react';
+import { CheckCircle2, Lightbulb, FolderKanban, FileText, RotateCcw, Sun, Moon } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
 import { useItems, useUpcomingTasks, useImportantItems, useGoals, useEvents } from '@/hooks/useItems';
 import DraggableDashboardCard from '@/components/dashboard/DraggableDashboardCard';
@@ -12,6 +12,7 @@ import TasksCard from '@/components/dashboard/TasksCard';
 import IdeasCard from '@/components/dashboard/IdeasCard';
 import ProjectsCard from '@/components/dashboard/ProjectsCard';
 import { useDashboardLayout, DashboardCardId } from '@/hooks/useDashboardLayout';
+import { useDashboardTheme } from '@/hooks/useDashboardTheme';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,6 +23,9 @@ export default function Dashboard() {
   const { data: goals } = useGoals();
   const { data: events } = useEvents();
   const { toast } = useToast();
+
+  // Theme state
+  const { theme, toggleTheme, isDark, isLoaded: themeLoaded } = useDashboardTheme();
 
   // Drag-and-drop state
   const { cardOrder, moveCard, resetToDefault, isLoaded } = useDashboardLayout();
@@ -47,12 +51,12 @@ export default function Dashboard() {
 
   // Card components map
   const cardComponents: Record<DashboardCardId, ReactNode> = useMemo(() => ({
-    tasks: <TasksCard tasks={upcomingTasks} taskCount={taskCount} />,
-    ideas: <IdeasCard ideas={ideas} ideaCount={ideaCount} />,
-    events: <EventsCalendarCard events={events || []} />,
-    projects: <ProjectsCard projects={projects} projectCount={projectCount} />,
-    notes: <QuickNotesBoard />,
-  }), [upcomingTasks, taskCount, ideas, ideaCount, events, projects, projectCount]);
+    tasks: <TasksCard tasks={upcomingTasks} taskCount={taskCount} isDark={isDark} />,
+    ideas: <IdeasCard ideas={ideas} ideaCount={ideaCount} isDark={isDark} />,
+    events: <EventsCalendarCard events={events || []} isDark={isDark} />,
+    projects: <ProjectsCard projects={projects} projectCount={projectCount} isDark={isDark} />,
+    notes: <QuickNotesBoard isDark={isDark} />,
+  }), [upcomingTasks, taskCount, ideas, ideaCount, events, projects, projectCount, isDark]);
 
   // Drag handlers
   const handleDragStart = (index: number) => {
@@ -85,10 +89,18 @@ export default function Dashboard() {
     });
   };
 
-  if (!isLoaded) {
+  const handleToggleTheme = () => {
+    toggleTheme();
+    toast({
+      title: isDark ? "Tema claro ativado" : "Tema escuro ativado",
+      description: "Sua preferência foi salva.",
+    });
+  };
+
+  if (!isLoaded || !themeLoaded) {
     return (
       <AppLayout>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
           <div className="animate-pulse text-muted-foreground">Carregando...</div>
         </div>
       </AppLayout>
@@ -97,36 +109,55 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="relative h-[calc(100vh-2rem)] flex flex-col bg-gray-50 overflow-hidden">
-        {/* Clean white/light background */}
-        <div className="fixed inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-100 pointer-events-none z-0" />
+      <div className={`relative h-[calc(100vh-2rem)] flex flex-col overflow-hidden transition-colors duration-300 ${
+        isDark ? 'bg-gray-900' : 'bg-gray-50'
+      }`}>
+        {/* Background */}
+        <div className={`fixed inset-0 pointer-events-none z-0 transition-colors duration-300 ${
+          isDark 
+            ? 'bg-gradient-to-br from-gray-900 via-gray-900 to-purple-900/20' 
+            : 'bg-gradient-to-br from-gray-50 via-white to-gray-100'
+        }`} />
 
         {/* Content - Flex container to fill viewport */}
         <div className="relative z-10 p-4 md:p-6 flex flex-col h-full gap-4">
-          {/* Header - Compact with Reset Button */}
+          {/* Header - Compact with Reset Button and Theme Toggle */}
           <motion.header 
             className="flex items-center justify-between gap-3 shrink-0"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <h1 className="text-xl font-display font-semibold text-gray-800">
+            <h1 className={`text-xl font-display font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
               Dashboard
             </h1>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleResetLayout}
-              className="text-gray-500 hover:text-gray-700 gap-2"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span className="hidden sm:inline">Resetar Layout</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Theme Toggle */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleToggleTheme}
+                className={`gap-2 ${isDark ? 'text-gray-300 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                <span className="hidden sm:inline">{isDark ? 'Claro' : 'Escuro'}</span>
+              </Button>
+              {/* Reset Layout */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResetLayout}
+                className={`gap-2 ${isDark ? 'text-gray-300 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span className="hidden sm:inline">Resetar Layout</span>
+              </Button>
+            </div>
           </motion.header>
 
           {/* Goals Bar - Fixed at top */}
           <div className="shrink-0">
-            <GoalsBar goals={goals || []} />
+            <GoalsBar goals={goals || []} isDark={isDark} />
           </div>
 
           {/* Stats Row - 4 cards */}
@@ -138,6 +169,7 @@ export default function Dashboard() {
               trend={12}
               color="green"
               delay={0.1}
+              isDark={isDark}
             />
             <StatCard
               icon={FolderKanban}
@@ -146,6 +178,7 @@ export default function Dashboard() {
               trend={5}
               color="cyan"
               delay={0.2}
+              isDark={isDark}
             />
             <StatCard
               icon={Lightbulb}
@@ -154,6 +187,7 @@ export default function Dashboard() {
               trend={-3}
               color="yellow"
               delay={0.3}
+              isDark={isDark}
             />
             <StatCard
               icon={FileText}
@@ -161,6 +195,7 @@ export default function Dashboard() {
               label="📝 Notas Criadas"
               color="magenta"
               delay={0.4}
+              isDark={isDark}
             />
           </div>
 

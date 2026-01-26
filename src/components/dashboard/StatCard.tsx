@@ -9,54 +9,101 @@ interface StatCardProps {
   trend?: number;
   color: 'cyan' | 'magenta' | 'purple' | 'green' | 'orange' | 'yellow';
   delay?: number;
+  isDark?: boolean;
 }
 
-const colorClasses = {
+const lightColorClasses = {
   cyan: {
-    bg: 'bg-gradient-to-br from-cyan-50 to-blue-50',
-    border: 'border-cyan-200',
-    shadow: 'shadow-cyan-200/50',
+    bg: 'bg-gradient-to-br from-cyan-100 to-blue-100',
+    border: 'border-cyan-300',
+    shadow: 'shadow-cyan-300/60',
     text: 'text-cyan-600',
-    iconBg: 'bg-cyan-100',
+    iconBg: 'bg-cyan-200',
   },
   magenta: {
-    bg: 'bg-gradient-to-br from-pink-50 to-rose-50',
-    border: 'border-pink-200',
-    shadow: 'shadow-pink-200/50',
+    bg: 'bg-gradient-to-br from-pink-100 to-rose-100',
+    border: 'border-pink-300',
+    shadow: 'shadow-pink-300/60',
     text: 'text-pink-600',
-    iconBg: 'bg-pink-100',
+    iconBg: 'bg-pink-200',
   },
   purple: {
-    bg: 'bg-gradient-to-br from-purple-50 to-violet-50',
-    border: 'border-purple-200',
-    shadow: 'shadow-purple-200/50',
+    bg: 'bg-gradient-to-br from-purple-100 to-violet-100',
+    border: 'border-purple-300',
+    shadow: 'shadow-purple-300/60',
     text: 'text-purple-600',
-    iconBg: 'bg-purple-100',
+    iconBg: 'bg-purple-200',
   },
   green: {
-    bg: 'bg-gradient-to-br from-green-50 to-emerald-50',
-    border: 'border-green-200',
-    shadow: 'shadow-green-200/50',
+    bg: 'bg-gradient-to-br from-green-100 to-emerald-100',
+    border: 'border-green-300',
+    shadow: 'shadow-green-300/60',
     text: 'text-green-600',
-    iconBg: 'bg-green-100',
+    iconBg: 'bg-green-200',
   },
   orange: {
-    bg: 'bg-gradient-to-br from-orange-50 to-amber-50',
-    border: 'border-orange-200',
-    shadow: 'shadow-orange-200/50',
+    bg: 'bg-gradient-to-br from-orange-100 to-amber-100',
+    border: 'border-orange-300',
+    shadow: 'shadow-orange-300/60',
     text: 'text-orange-600',
-    iconBg: 'bg-orange-100',
+    iconBg: 'bg-orange-200',
   },
   yellow: {
-    bg: 'bg-gradient-to-br from-yellow-50 to-amber-50',
-    border: 'border-yellow-200',
-    shadow: 'shadow-yellow-200/50',
+    bg: 'bg-gradient-to-br from-yellow-100 to-amber-100',
+    border: 'border-yellow-300',
+    shadow: 'shadow-yellow-300/60',
     text: 'text-yellow-600',
-    iconBg: 'bg-yellow-100',
+    iconBg: 'bg-yellow-200',
   },
 };
 
-export default function StatCard({ icon: Icon, value, label, trend, color, delay = 0 }: StatCardProps) {
+const darkColorClasses = {
+  cyan: {
+    bg: 'bg-gradient-to-br from-cyan-900/80 to-blue-900/80',
+    border: 'border-cyan-700/50',
+    shadow: 'shadow-cyan-900/50',
+    text: 'text-cyan-300',
+    iconBg: 'bg-cyan-800/50',
+  },
+  magenta: {
+    bg: 'bg-gradient-to-br from-pink-900/80 to-rose-900/80',
+    border: 'border-pink-700/50',
+    shadow: 'shadow-pink-900/50',
+    text: 'text-pink-300',
+    iconBg: 'bg-pink-800/50',
+  },
+  purple: {
+    bg: 'bg-gradient-to-br from-purple-900/80 to-violet-900/80',
+    border: 'border-purple-700/50',
+    shadow: 'shadow-purple-900/50',
+    text: 'text-purple-300',
+    iconBg: 'bg-purple-800/50',
+  },
+  green: {
+    bg: 'bg-gradient-to-br from-green-900/80 to-emerald-900/80',
+    border: 'border-green-700/50',
+    shadow: 'shadow-green-900/50',
+    text: 'text-green-300',
+    iconBg: 'bg-green-800/50',
+  },
+  orange: {
+    bg: 'bg-gradient-to-br from-orange-900/80 to-amber-900/80',
+    border: 'border-orange-700/50',
+    shadow: 'shadow-orange-900/50',
+    text: 'text-orange-300',
+    iconBg: 'bg-orange-800/50',
+  },
+  yellow: {
+    bg: 'bg-gradient-to-br from-yellow-900/80 to-amber-900/80',
+    border: 'border-yellow-700/50',
+    shadow: 'shadow-yellow-900/50',
+    text: 'text-yellow-300',
+    iconBg: 'bg-yellow-800/50',
+  },
+};
+
+export default function StatCard({ icon: Icon, value, label, trend, color, delay = 0, isDark = false }: StatCardProps) {
+  const colorClasses = isDark ? darkColorClasses : lightColorClasses;
   const colors = colorClasses[color];
 
   return (
@@ -66,11 +113,11 @@ export default function StatCard({ icon: Icon, value, label, trend, color, delay
       transition={{ duration: 0.5, delay }}
       whileHover={{ scale: 1.02, y: -2 }}
       className={cn(
-        'relative p-3 rounded-xl border',
+        'relative p-3 rounded-xl border-2',
         'transition-all duration-300',
         colors.bg,
         colors.border,
-        `shadow-md ${colors.shadow} hover:shadow-lg`
+        `shadow-lg ${colors.shadow} hover:shadow-xl`
       )}
     >
       <div className="relative flex items-start justify-between">
@@ -83,7 +130,7 @@ export default function StatCard({ icon: Icon, value, label, trend, color, delay
           >
             {value}
           </motion.div>
-          <p className="text-[10px] text-gray-500 mt-0.5 uppercase tracking-wider leading-tight">
+          <p className={cn('text-[10px] mt-0.5 uppercase tracking-wider leading-tight', isDark ? 'text-gray-300' : 'text-gray-600')}>
             {label}
           </p>
         </div>
@@ -106,7 +153,7 @@ export default function StatCard({ icon: Icon, value, label, trend, color, delay
           )}>
             {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
           </span>
-          <span className="text-[10px] text-gray-400">vs última semana</span>
+          <span className={cn('text-[10px]', isDark ? 'text-gray-400' : 'text-gray-500')}>vs última semana</span>
         </motion.div>
       )}
     </motion.div>
