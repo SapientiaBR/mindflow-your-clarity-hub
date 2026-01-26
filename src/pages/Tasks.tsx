@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { useItems } from '@/hooks/useItems';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -10,7 +10,9 @@ import { ItemActions } from '@/components/items/ItemActions';
 import { ItemEditModal } from '@/components/items/ItemEditModal';
 import { TagBadge } from '@/components/tags/TagBadge';
 import { Item } from '@/types';
-import { Star } from 'lucide-react';
+import { Star, Clock, Bell, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 export default function Tasks() {
   const { items, updateItem, deleteItem } = useItems('task');
@@ -18,9 +20,17 @@ export default function Tasks() {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [orderedItems, setOrderedItems] = useState<Item[]>([]);
+  const [showCompleted, setShowCompleted] = useState(true);
+
+  // Split tasks into active and completed
+  const { activeTasks, completedTasks } = useMemo(() => {
+    const active = items.filter(item => item.status !== 'completed');
+    const completed = items.filter(item => item.status === 'completed');
+    return { activeTasks: active, completedTasks: completed };
+  }, [items]);
 
   // Initialize ordered items
-  const displayItems = orderedItems.length > 0 ? orderedItems : items;
+  const displayItems = orderedItems.length > 0 ? orderedItems : activeTasks;
 
   const toggleTask = (id: string, completed: boolean) => {
     updateItem.mutate({ id, status: completed ? 'completed' : 'active' });
@@ -28,20 +38,20 @@ export default function Tasks() {
 
   const handleDragStart = useCallback((index: number) => {
     setDraggedIndex(index);
-    setOrderedItems([...items]);
-  }, [items]);
+    setOrderedItems([...activeTasks]);
+  }, [activeTasks]);
 
   const handleDragOver = useCallback((index: number) => {
     if (draggedIndex === null || draggedIndex === index) return;
     setDragOverIndex(index);
     
     // Reorder items
-    const newItems = [...orderedItems.length > 0 ? orderedItems : items];
+    const newItems = [...orderedItems.length > 0 ? orderedItems : activeTasks];
     const [draggedItem] = newItems.splice(draggedIndex, 1);
     newItems.splice(index, 0, draggedItem);
     setOrderedItems(newItems);
     setDraggedIndex(index);
-  }, [draggedIndex, orderedItems, items]);
+  }, [draggedIndex, orderedItems, activeTasks]);
 
   const handleDragEnd = useCallback(() => {
     // Save new order to database
@@ -77,6 +87,101 @@ export default function Tasks() {
     }
   };
 
+  const TaskItem = ({ task, index, isDraggable = true }: { task: Item; index: number; isDraggable?: boolean }) => {
+    const content = (
+      <div 
+        className={`glass-card rounded-xl p-4 flex items-start gap-3 group cursor-pointer transition-all hover:border-primary/30 ${
+          task.status === 'completed' ? 'opacity-60' : ''
+        }`}
+        onClick={() => setEditingItem(task)}
+      >
+        <Checkbox 
+          checked={task.status === 'completed'} 
+          onCheckedChange={(c) => {
+            toggleTask(task.id, !!c);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="mt-1" 
+        />
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start gap-2">
+            {task.is_important && (
+              <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 mt-0.5 flex-shrink-0" />
+            )}
+            <p className={`flex-1 ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
+              {task.content}
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            {task.due_date && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="w-3 h-3" />
+                {format(new Date(task.due_date), "dd MMM yyyy 'às' HH:mm", { locale: ptBR })}
+              </span>
+            )}
+            
+            {task.reminder_at && (
+              <span className="flex items-center gap-1 text-xs text-orange-400">
+                <Bell className="w-3 h-3" />
+                {format(new Date(task.reminder_at), "dd MMM HH:mm", { locale: ptBR })}
+              </span>
+            )}
+            
+            {task.tags && task.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {task.tags.map((tag, idx) => (
+                  <TagBadge key={idx} tag={tag} size="sm" />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(task.priority)}`}>
+            {task.priority || 'medium'}
+          </span>
+          
+          <ItemActions
+            item={task}
+            onEdit={setEditingItem}
+            onDelete={handleDelete}
+            onToggleImportant={handleToggleImportant}
+          />
+        </div>
+      </div>
+    );
+
+    if (isDraggable) {
+      return (
+        <DraggableItem
+          id={task.id}
+          index={index}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+          isDragging={draggedIndex === index}
+          isDraggedOver={dragOverIndex === index}
+        >
+          {content}
+        </DraggableItem>
+      );
+    }
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.2 }}
+      >
+        {content}
+      </motion.div>
+    );
+  };
+
   return (
     <AppLayout>
       <div className="flex-1 p-4 md:p-6 overflow-y-auto">
@@ -85,81 +190,48 @@ export default function Tasks() {
           <p className="text-muted-foreground">Arraste para reordenar • Clique para editar</p>
         </header>
         
-        <div className="space-y-2 max-w-2xl">
-          {displayItems.map((task, i) => (
-            <DraggableItem
-              key={task.id}
-              id={task.id}
-              index={i}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDragEnd={handleDragEnd}
-              isDragging={draggedIndex === i}
-              isDraggedOver={dragOverIndex === i}
-            >
-              <div 
-                className={`glass-card rounded-xl p-4 flex items-start gap-3 group cursor-pointer transition-all hover:border-mindflow-purple/30 ${
-                  task.status === 'completed' ? 'opacity-60' : ''
-                }`}
-                onClick={() => setEditingItem(task)}
-              >
-                <Checkbox 
-                  checked={task.status === 'completed'} 
-                  onCheckedChange={(c) => {
-                    // Prevent opening modal when clicking checkbox
-                    toggleTask(task.id, !!c);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="mt-1" 
-                />
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start gap-2">
-                    {task.is_important && (
-                      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 mt-0.5 flex-shrink-0" />
-                    )}
-                    <p className={`flex-1 ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
-                      {task.content}
-                    </p>
+        <div className="space-y-6 max-w-2xl">
+          {/* Active Tasks */}
+          <div className="space-y-2">
+            {displayItems.map((task, i) => (
+              <TaskItem key={task.id} task={task} index={i} isDraggable />
+            ))}
+            
+            {!displayItems.length && (
+              <p className="text-muted-foreground text-center py-12">
+                Nenhuma tarefa ativa. Use o chat para criar!
+              </p>
+            )}
+          </div>
+
+          {/* Completed Tasks Section */}
+          {completedTasks.length > 0 && (
+            <Collapsible open={showCompleted} onOpenChange={setShowCompleted}>
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-between p-4 h-auto glass-card rounded-xl hover:bg-muted/30"
+                >
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-400" />
+                    <span className="font-medium">Tarefas Finalizadas</span>
+                    <span className="text-sm text-muted-foreground">({completedTasks.length})</span>
                   </div>
-                  
-                  <div className="flex flex-wrap items-center gap-2 mt-2">
-                    {task.due_date && (
-                      <span className="text-xs text-muted-foreground">
-                        📅 {format(new Date(task.due_date), "dd MMM yyyy", { locale: ptBR })}
-                      </span>
-                    )}
-                    
-                    {task.tags && task.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {task.tags.map((tag, idx) => (
-                          <TagBadge key={idx} tag={tag} size="sm" />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(task.priority)}`}>
-                    {task.priority || 'medium'}
-                  </span>
-                  
-                  <ItemActions
-                    item={task}
-                    onEdit={setEditingItem}
-                    onDelete={handleDelete}
-                    onToggleImportant={handleToggleImportant}
-                  />
-                </div>
-              </div>
-            </DraggableItem>
-          ))}
-          
-          {!displayItems.length && (
-            <p className="text-muted-foreground text-center py-12">
-              Nenhuma tarefa. Use o chat para criar!
-            </p>
+                  {showCompleted ? (
+                    <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2 mt-2">
+                <AnimatePresence>
+                  {completedTasks.map((task, i) => (
+                    <TaskItem key={task.id} task={task} index={i} isDraggable={false} />
+                  ))}
+                </AnimatePresence>
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </div>
       </div>
