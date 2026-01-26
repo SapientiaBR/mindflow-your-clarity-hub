@@ -12,11 +12,13 @@ type DatabaseItem = {
   status: string;
   priority: string | null;
   due_date: string | null;
+  reminder_at: string | null;
   parent_id: string | null;
   tags: string[] | null;
   is_important: boolean | null;
   position_x: number | null;
   position_y: number | null;
+  sort_order: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -30,11 +32,13 @@ const mapDatabaseItem = (item: DatabaseItem): Item => ({
   status: item.status as ItemStatus,
   priority: (item.priority as PriorityLevel) ?? undefined,
   due_date: item.due_date ?? undefined,
+  reminder_at: item.reminder_at ?? undefined,
   parent_id: item.parent_id ?? undefined,
   tags: item.tags ?? [],
   is_important: item.is_important ?? false,
   position_x: item.position_x ?? 0,
   position_y: item.position_y ?? 0,
+  sort_order: item.sort_order ?? 0,
   created_at: item.created_at,
   updated_at: item.updated_at,
 });

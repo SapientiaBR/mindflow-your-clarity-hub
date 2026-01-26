@@ -13,7 +13,7 @@ import { TagInput } from '@/components/tags/TagInput';
 import { Item, ItemType } from '@/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CalendarIcon, Trash2, Clock } from 'lucide-react';
+import { CalendarIcon, Trash2, Clock, Bell, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -44,6 +44,9 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [hour, setHour] = useState('09');
   const [minute, setMinute] = useState('00');
+  const [reminderDate, setReminderDate] = useState<Date | undefined>();
+  const [reminderHour, setReminderHour] = useState('09');
+  const [reminderMinute, setReminderMinute] = useState('00');
   const [progress, setProgress] = useState(0);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
@@ -65,6 +68,16 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
         setHour('09');
         setMinute('00');
       }
+      if (item.reminder_at) {
+        const date = new Date(item.reminder_at);
+        setReminderDate(date);
+        setReminderHour(date.getHours().toString().padStart(2, '0'));
+        setReminderMinute(date.getMinutes().toString().padStart(2, '0'));
+      } else {
+        setReminderDate(undefined);
+        setReminderHour('09');
+        setReminderMinute('00');
+      }
       setProgress(item.progress || 0);
     }
   }, [item]);
@@ -85,6 +98,17 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
         updates.due_date = combined.toISOString();
       } else {
         updates.due_date = undefined;
+      }
+    }
+
+    // Reminder for tasks and events
+    if (item.type === 'task' || item.type === 'event') {
+      if (reminderDate) {
+        const combined = new Date(reminderDate);
+        combined.setHours(parseInt(reminderHour), parseInt(reminderMinute), 0, 0);
+        updates.reminder_at = combined.toISOString();
+      } else {
+        updates.reminder_at = undefined;
       }
     }
 
@@ -116,18 +140,25 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
     }
   };
 
+  const clearReminder = () => {
+    setReminderDate(undefined);
+    setReminderHour('09');
+    setReminderMinute('00');
+  };
+
   if (!item) return null;
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-lg bg-card/95 backdrop-blur-xl border-white/10">
+        <DialogContent className="max-w-lg bg-card/95 backdrop-blur-xl border-white/10 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {item.type === 'task' && '✅ Editar Tarefa'}
+              {item.type === 'event' && '📅 Editar Evento'}
               {item.type === 'idea' && '💡 Editar Ideia'}
               {item.type === 'project' && '📁 Editar Projeto'}
-              {!['task', 'idea', 'project'].includes(item.type) && '📝 Editar Item'}
+              {!['task', 'idea', 'project', 'event'].includes(item.type) && '📝 Editar Item'}
             </DialogTitle>
           </DialogHeader>
 
@@ -188,7 +219,7 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
             {/* Date and time fields for tasks and events */}
             {(item.type === 'task' || item.type === 'event') && (
               <div className="space-y-2">
-                <Label>{item.type === 'event' ? 'Data e Horário' : 'Data de Vencimento'}</Label>
+                <Label>{item.type === 'event' ? 'Data e Horário' : 'Prazo (Deadline)'}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -246,6 +277,85 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
                     </div>
                   </PopoverContent>
                 </Popover>
+              </div>
+            )}
+
+            {/* Reminder field for tasks and events */}
+            {(item.type === 'task' || item.type === 'event') && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-orange-400" />
+                  Lembrete
+                </Label>
+                <div className="flex gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "flex-1 justify-start text-left font-normal",
+                          !reminderDate && "text-muted-foreground"
+                        )}
+                      >
+                        <Bell className="mr-2 h-4 w-4" />
+                        {reminderDate ? (
+                          <>
+                            {format(reminderDate, "dd/MM/yyyy", { locale: ptBR })}
+                            <Clock className="ml-2 h-4 w-4" />
+                            <span className="ml-1">{reminderHour}:{reminderMinute}</span>
+                          </>
+                        ) : (
+                          "Definir lembrete"
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-popover" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={reminderDate}
+                        onSelect={setReminderDate}
+                        locale={ptBR}
+                        className="pointer-events-auto"
+                      />
+                      <div className="border-t border-border p-3">
+                        <Label className="text-xs text-muted-foreground mb-2 block">Horário do lembrete</Label>
+                        <div className="flex items-center gap-2">
+                          <Select value={reminderHour} onValueChange={setReminderHour}>
+                            <SelectTrigger className="w-20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-popover">
+                              {Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')).map(h => (
+                                <SelectItem key={h} value={h}>{h}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <span className="text-muted-foreground">:</span>
+                          <Select value={reminderMinute} onValueChange={setReminderMinute}>
+                            <SelectTrigger className="w-20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-popover">
+                              {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(m => (
+                                <SelectItem key={m} value={m}>{m}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  {reminderDate && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={clearReminder}
+                      className="shrink-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
 

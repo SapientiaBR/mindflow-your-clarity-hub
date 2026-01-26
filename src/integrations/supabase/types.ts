@@ -64,6 +64,7 @@ export type Database = {
           position_x: number | null
           position_y: number | null
           priority: Database["public"]["Enums"]["priority_level"] | null
+          reminder_at: string | null
           sort_order: number | null
           status: Database["public"]["Enums"]["item_status"]
           tags: string[] | null
@@ -82,6 +83,7 @@ export type Database = {
           position_x?: number | null
           position_y?: number | null
           priority?: Database["public"]["Enums"]["priority_level"] | null
+          reminder_at?: string | null
           sort_order?: number | null
           status?: Database["public"]["Enums"]["item_status"]
           tags?: string[] | null
@@ -100,6 +102,7 @@ export type Database = {
           position_x?: number | null
           position_y?: number | null
           priority?: Database["public"]["Enums"]["priority_level"] | null
+          reminder_at?: string | null
           sort_order?: number | null
           status?: Database["public"]["Enums"]["item_status"]
           tags?: string[] | null

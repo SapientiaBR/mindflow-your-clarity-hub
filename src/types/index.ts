@@ -13,6 +13,7 @@ export interface Item {
   status: ItemStatus;
   priority?: PriorityLevel;
   due_date?: string;
+  reminder_at?: string;
   parent_id?: string;
   tags: string[];
   is_important: boolean;
