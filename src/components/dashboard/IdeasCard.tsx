@@ -25,20 +25,20 @@ export default function IdeasCard({ ideas, ideaCount }: IdeasCardProps) {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 * index }}
-              className="p-2 md:p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors border border-border/30"
+              className="p-2 rounded-lg bg-white/60 hover:bg-white/80 transition-colors border border-yellow-100"
             >
-              <p className="text-xs md:text-sm text-foreground/90 line-clamp-2">
+              <p className="text-xs text-gray-700 line-clamp-2">
                 {idea.content}
               </p>
-              <span className="text-xs text-primary mt-1 inline-block">
+              <span className="text-xs text-yellow-600 mt-1 inline-block">
                 {idea.status === 'raw' ? '💡 Bruta' : idea.status === 'evolving' ? '🌱 Evoluindo' : '🚀 Em progresso'}
               </span>
             </motion.div>
           ))
         ) : (
-          <div className="text-center py-4 text-muted-foreground">
+          <div className="text-center py-4 text-gray-400">
             <Lightbulb className="w-6 h-6 mx-auto mb-2 opacity-50" />
-            <p className="text-xs md:text-sm">Capture suas primeiras ideias</p>
+            <p className="text-xs">Capture suas primeiras ideias</p>
           </div>
         )}
       </div>

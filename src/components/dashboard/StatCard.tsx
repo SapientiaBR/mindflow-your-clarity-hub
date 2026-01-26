@@ -13,46 +13,46 @@ interface StatCardProps {
 
 const colorClasses = {
   cyan: {
-    glow: 'shadow-[0_0_30px_rgba(0,255,255,0.3)]',
-    border: 'border-cyan-500/30',
-    text: 'text-cyan-400',
-    bg: 'bg-cyan-500/10',
-    iconBg: 'bg-cyan-500/20',
+    bg: 'bg-gradient-to-br from-cyan-50 to-blue-50',
+    border: 'border-cyan-200',
+    shadow: 'shadow-cyan-200/50',
+    text: 'text-cyan-600',
+    iconBg: 'bg-cyan-100',
   },
   magenta: {
-    glow: 'shadow-[0_0_30px_rgba(255,0,255,0.3)]',
-    border: 'border-pink-500/30',
-    text: 'text-pink-400',
-    bg: 'bg-pink-500/10',
-    iconBg: 'bg-pink-500/20',
+    bg: 'bg-gradient-to-br from-pink-50 to-rose-50',
+    border: 'border-pink-200',
+    shadow: 'shadow-pink-200/50',
+    text: 'text-pink-600',
+    iconBg: 'bg-pink-100',
   },
   purple: {
-    glow: 'shadow-[0_0_30px_rgba(139,92,246,0.3)]',
-    border: 'border-purple-500/30',
-    text: 'text-purple-400',
-    bg: 'bg-purple-500/10',
-    iconBg: 'bg-purple-500/20',
+    bg: 'bg-gradient-to-br from-purple-50 to-violet-50',
+    border: 'border-purple-200',
+    shadow: 'shadow-purple-200/50',
+    text: 'text-purple-600',
+    iconBg: 'bg-purple-100',
   },
   green: {
-    glow: 'shadow-[0_0_30px_rgba(16,185,129,0.3)]',
-    border: 'border-emerald-500/30',
-    text: 'text-emerald-400',
-    bg: 'bg-emerald-500/10',
-    iconBg: 'bg-emerald-500/20',
+    bg: 'bg-gradient-to-br from-green-50 to-emerald-50',
+    border: 'border-green-200',
+    shadow: 'shadow-green-200/50',
+    text: 'text-green-600',
+    iconBg: 'bg-green-100',
   },
   orange: {
-    glow: 'shadow-[0_0_30px_rgba(249,115,22,0.3)]',
-    border: 'border-orange-500/30',
-    text: 'text-orange-400',
-    bg: 'bg-orange-500/10',
-    iconBg: 'bg-orange-500/20',
+    bg: 'bg-gradient-to-br from-orange-50 to-amber-50',
+    border: 'border-orange-200',
+    shadow: 'shadow-orange-200/50',
+    text: 'text-orange-600',
+    iconBg: 'bg-orange-100',
   },
   yellow: {
-    glow: 'shadow-[0_0_30px_rgba(250,204,21,0.3)]',
-    border: 'border-yellow-500/30',
-    text: 'text-yellow-400',
-    bg: 'bg-yellow-500/10',
-    iconBg: 'bg-yellow-500/20',
+    bg: 'bg-gradient-to-br from-yellow-50 to-amber-50',
+    border: 'border-yellow-200',
+    shadow: 'shadow-yellow-200/50',
+    text: 'text-yellow-600',
+    iconBg: 'bg-yellow-100',
   },
 };
 
@@ -66,72 +66,49 @@ export default function StatCard({ icon: Icon, value, label, trend, color, delay
       transition={{ duration: 0.5, delay }}
       whileHover={{ scale: 1.02, y: -2 }}
       className={cn(
-        'relative p-4 rounded-xl border backdrop-blur-xl',
-        'bg-black/40 hover:bg-black/50 transition-all duration-300',
+        'relative p-3 rounded-xl border',
+        'transition-all duration-300',
+        colors.bg,
         colors.border,
-        colors.glow
+        `shadow-md ${colors.shadow} hover:shadow-lg`
       )}
     >
-      {/* Animated border gradient */}
-      <div className="absolute inset-0 rounded-xl opacity-50 overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
-          style={{
-            animation: 'shimmer 3s linear infinite',
-          }}
-        />
-      </div>
-
       <div className="relative flex items-start justify-between">
         <div className="flex-1">
           <motion.div
-            className={cn('text-3xl font-bold font-display', colors.text)}
+            className={cn('text-2xl font-bold font-display', colors.text)}
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: delay + 0.2 }}
-            style={{
-              textShadow: color === 'cyan' ? '0 0 20px rgba(0,255,255,0.5)' :
-                         color === 'magenta' ? '0 0 20px rgba(255,0,255,0.5)' :
-                         color === 'purple' ? '0 0 20px rgba(139,92,246,0.5)' :
-                         color === 'green' ? '0 0 20px rgba(16,185,129,0.5)' :
-                         color === 'yellow' ? '0 0 20px rgba(250,204,21,0.5)' :
-                         '0 0 20px rgba(249,115,22,0.5)'
-            }}
           >
             {value}
           </motion.div>
-          <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">
+          <p className="text-[10px] text-gray-500 mt-0.5 uppercase tracking-wider leading-tight">
             {label}
           </p>
         </div>
 
-        <div className={cn('p-2 rounded-lg', colors.iconBg)}>
-          <Icon className={cn('w-5 h-5', colors.text)} />
+        <div className={cn('p-1.5 rounded-lg', colors.iconBg)}>
+          <Icon className={cn('w-4 h-4', colors.text)} />
         </div>
       </div>
 
       {trend !== undefined && (
         <motion.div 
-          className="mt-3 flex items-center gap-1"
+          className="mt-2 flex items-center gap-1"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: delay + 0.4 }}
         >
           <span className={cn(
-            'text-xs font-medium',
-            trend >= 0 ? 'text-emerald-400' : 'text-red-400'
+            'text-[10px] font-medium',
+            trend >= 0 ? 'text-green-600' : 'text-red-600'
           )}>
             {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
           </span>
-          <span className="text-xs text-muted-foreground">vs última semana</span>
+          <span className="text-[10px] text-gray-400">vs última semana</span>
         </motion.div>
       )}
-
-      {/* Corner accent */}
-      <div className={cn(
-        'absolute top-0 right-0 w-16 h-16 opacity-20',
-        'bg-gradient-to-bl from-current to-transparent rounded-tr-xl'
-      )} style={{ color: color === 'cyan' ? '#00FFFF' : color === 'magenta' ? '#FF00FF' : color === 'purple' ? '#8B5CF6' : color === 'green' ? '#10B981' : color === 'yellow' ? '#FACC15' : '#F97316' }} />
     </motion.div>
   );
 }
