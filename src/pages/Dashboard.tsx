@@ -4,8 +4,6 @@ import { CheckCircle2, Lightbulb, FolderKanban, FileText, TrendingUp, RotateCcw 
 import AppLayout from '@/components/layout/AppLayout';
 import { useItems, useUpcomingTasks, useImportantItems, useGoals, useEvents } from '@/hooks/useItems';
 import DraggableDashboardCard from '@/components/dashboard/DraggableDashboardCard';
-import ParticleBackground from '@/components/dashboard/ParticleBackground';
-import TechGridBackground from '@/components/dashboard/TechGridBackground';
 import StatCard from '@/components/dashboard/StatCard';
 import GoalsBar from '@/components/dashboard/GoalsBar';
 import EventsCalendarCard from '@/components/dashboard/EventsCalendarCard';
@@ -90,7 +88,7 @@ export default function Dashboard() {
   if (!isLoaded) {
     return (
       <AppLayout>
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="animate-pulse text-muted-foreground">Carregando...</div>
         </div>
       </AppLayout>
@@ -99,33 +97,27 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="relative min-h-screen overflow-y-auto pb-20 md:pb-6">
-        {/* Layered backgrounds - z-0 to stay behind sidebar */}
-        <div className="fixed inset-0 bg-gradient-to-br from-background via-background to-primary/5 pointer-events-none z-0" />
-        <div className="fixed inset-0 pointer-events-none z-0">
-          <TechGridBackground />
-        </div>
-        <div className="fixed inset-0 pointer-events-none z-0">
-          <ParticleBackground />
-        </div>
+      <div className="relative h-[calc(100vh-2rem)] flex flex-col bg-gray-50 overflow-hidden">
+        {/* Clean white/light background */}
+        <div className="fixed inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-100 pointer-events-none z-0" />
 
-        {/* Content */}
-        <div className="relative z-10 p-4 md:p-6 space-y-4 md:space-y-6">
+        {/* Content - Flex container to fill viewport */}
+        <div className="relative z-10 p-4 md:p-6 flex flex-col h-full gap-4">
           {/* Header - Compact with Reset Button */}
           <motion.header 
-            className="flex items-center justify-between gap-3 py-2"
+            className="flex items-center justify-between gap-3 shrink-0"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <h1 className="text-xl font-display font-semibold text-foreground/80">
+            <h1 className="text-xl font-display font-semibold text-gray-800">
               Dashboard
             </h1>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleResetLayout}
-              className="text-muted-foreground hover:text-foreground gap-2"
+              className="text-gray-500 hover:text-gray-700 gap-2"
             >
               <RotateCcw className="w-4 h-4" />
               <span className="hidden sm:inline">Resetar Layout</span>
@@ -133,10 +125,12 @@ export default function Dashboard() {
           </motion.header>
 
           {/* Goals Bar - Fixed at top */}
-          <GoalsBar goals={goals || []} />
+          <div className="shrink-0">
+            <GoalsBar goals={goals || []} />
+          </div>
 
           {/* Stats Row - 4 cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 shrink-0">
             <StatCard
               icon={CheckCircle2}
               value={pendingTasks}
@@ -170,8 +164,8 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Main Grid - Draggable Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-start auto-rows-min">
+          {/* Main Grid - Draggable Cards - Fills remaining space */}
+          <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
             {cardOrder.map((cardId, index) => (
               <DraggableDashboardCard
                 key={cardId}
@@ -187,40 +181,6 @@ export default function Dashboard() {
               </DraggableDashboardCard>
             ))}
           </div>
-
-          {/* Important Items Section */}
-          {importantItems && importantItems.length > 0 && (
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              className="mt-8"
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-display font-semibold text-foreground">Prioridades</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {importantItems.slice(0, 3).map((item, index) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.9 + index * 0.1 }}
-                    className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 hover:border-primary/40 transition-all"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 rounded-full bg-primary shadow-lg mt-2" />
-                      <div>
-                        <p className="text-sm text-foreground/90">{item.content}</p>
-                        <span className="text-xs text-muted-foreground capitalize">{item.type}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.section>
-          )}
         </div>
       </div>
     </AppLayout>
