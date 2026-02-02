@@ -1,191 +1,189 @@
 
+## Plano de Correção: Varredura Completa do Site
 
-## Plano: Dashboard com Fundo Branco e Cards Auto-Ajustáveis
+### Problema Identificado
 
-### Visão Geral
-Vamos fazer duas alterações principais na Dashboard:
-1. Trocar o fundo escuro por branco para destacar os cards coloridos
-2. Ajustar o layout para que todos os cards sejam visíveis sem rolagem, adaptando-se ao tamanho da tela
+Ao analisar o fluxo de atualização dos cards, identifiquei que o problema de "updates que não salvam" está relacionado à **falta de feedback visual imediato e possíveis erros silenciosos** nas mutações do React Query.
 
----
+### Diagnóstico Detalhado
 
-### 1. Fundo Branco na Dashboard
+#### 1. Problema Principal: Mutação sem Feedback de Erro
 
-**Arquivo:** `src/pages/Dashboard.tsx`
-
-Vamos remover os backgrounds animados (partículas e grid) e aplicar um fundo branco/claro limpo que destaque os cards coloridos.
-
-**Mudanças:**
-- Remover `<TechGridBackground />` e `<ParticleBackground />`
-- Substituir o gradiente escuro por um fundo branco com um sutil gradiente para manter elegância
-
-```text
-De:
-┌─────────────────────────────────────────┐
-│  Fixed backgrounds (gradiente escuro)   │
-│  + TechGridBackground                   │
-│  + ParticleBackground                   │
-└─────────────────────────────────────────┘
-
-Para:
-┌─────────────────────────────────────────┐
-│  Fundo branco/cinza claro               │
-│  (sem animações de partículas)          │
-└─────────────────────────────────────────┘
-```
-
----
-
-### 2. Cards Auto-Ajustáveis (Sem Scroll)
-
-**Arquivos a modificar:**
-- `src/pages/Dashboard.tsx` - Layout principal
-- `src/components/dashboard/DashboardCard.tsx` - Estilo dos cards
-- Cards individuais (Tasks, Ideas, Projects, Events, Notes) - Limitar itens exibidos
-
-**Estratégia:**
-
-#### 2.1 Layout Principal - Grid Responsivo com `minmax` e `fr`
-
-Usar CSS Grid com alturas flexíveis baseadas no viewport:
-
-```css
-/* Desktop: 3 colunas, altura máxima calculada */
-grid-template-rows: auto auto minmax(0, 1fr);
-
-/* Com altura máxima do container baseada na viewport */
-max-height: calc(100vh - [header + goals + stats]);
-```
-
-#### 2.2 Limitar Conteúdo dos Cards
-
-Cada card mostrará menos itens para caber sem scroll:
-
-| Card | Itens Atuais | Itens Novos |
-|------|--------------|-------------|
-| Tasks | 4 | 2-3 |
-| Ideas | 3 | 2-3 |
-| Projects | 4 | 2-3 |
-| Events | 5 próximos | 2-3 próximos |
-| Notes | 6 | 4 |
-
-#### 2.3 Container Principal com Altura Fixa
-
-```text
-┌─────────────────────────────────────────────────────────┐
-│ Header (Dashboard + Resetar Layout)                     │  ~40px
-├─────────────────────────────────────────────────────────┤
-│ GoalsBar                                                │  ~80px
-├─────────────────────────────────────────────────────────┤
-│ Stats Row (4 cards pequenos)                            │  ~100px
-├─────────────────────────────────────────────────────────┤
-│ ┌─────────────┬─────────────┬─────────────┐             │
-│ │   Tasks     │   Ideas     │   Events    │             │  Resto do
-│ │   (card)    │   (card)    │ (calendar)  │             │  viewport
-│ ├─────────────┼─────────────┼─────────────┤             │
-│ │  Projects   │   Notes     │             │             │
-│ │   (card)    │  (mural)    │             │             │
-│ └─────────────┴─────────────┴─────────────┘             │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
-### 3. Detalhes Técnicos
-
-#### 3.1 Dashboard.tsx - Novo Layout
+No arquivo `src/hooks/useItems.tsx`, a função `updateItem` não tem tratamento de erro no callback:
 
 ```typescript
-// Remover backgrounds animados
+const updateItem = useMutation({
+  mutationFn: async ({ id, ...updates }) => {
+    const { data, error } = await supabase.from('items').update(updates).eq('id', id).select().single();
+    if (error) throw error;  // Erro é lançado, mas...
+    return mapDatabaseItem(data);
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['items'] });
+    // Sem toast de sucesso!
+  },
+  // FALTA: onError callback!
+});
+```
+
+#### 2. Problema Secundário: ItemEditModal não mostra erros
+
+No `ItemEditModal.tsx`, o `handleSave` chama `onSave(item.id, updates)` e fecha imediatamente:
+
+```typescript
+const handleSave = () => {
+  // ... monta updates
+  onSave(item.id, updates);
+  onClose();  // Fecha ANTES de saber se salvou!
+};
+```
+
+#### 3. Problema com undefined values
+
+No `ItemEditModal.tsx`, ao definir `updates.due_date = undefined` ou `updates.reminder_at = undefined`, o Supabase pode não processar corretamente. Deve-se usar `null` para limpar campos.
+
+---
+
+### Correções Necessárias
+
+#### 1. Adicionar tratamento de erros e feedback no useItems.tsx
+
+**Arquivo:** `src/hooks/useItems.tsx`
+
+- Adicionar `onError` callback em todas as mutações
+- Adicionar `onSuccess` com toast de confirmação
+- Retornar a Promise para permitir await
+
+```typescript
+const updateItem = useMutation({
+  mutationFn: async ({ id, ...updates }) => {
+    const { data, error } = await supabase
+      .from('items')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return mapDatabaseItem(data);
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['items'] });
+  },
+  onError: (error) => {
+    console.error('Erro ao atualizar item:', error);
+  },
+});
+```
+
+#### 2. Corrigir ItemEditModal para usar null em vez de undefined
+
+**Arquivo:** `src/components/items/ItemEditModal.tsx`
+
+```typescript
 // De:
-<div className="fixed inset-0 pointer-events-none z-0">
-  <TechGridBackground />
-</div>
-<div className="fixed inset-0 pointer-events-none z-0">
-  <ParticleBackground />
-</div>
+updates.due_date = undefined;
 
 // Para:
-<div className="fixed inset-0 bg-gray-50 pointer-events-none z-0" />
+updates.due_date = null;
 ```
 
+#### 3. Adicionar feedback visual nas páginas
+
+**Arquivos:** `src/pages/Tasks.tsx`, `src/pages/Ideas.tsx`, `src/pages/Events.tsx`, `src/pages/Goals.tsx`, `src/pages/Projects.tsx`, `src/pages/Timeline.tsx`
+
+Modificar `handleSave` para mostrar toast de sucesso/erro:
+
 ```typescript
-// Container principal com altura do viewport
-<div className="relative z-10 p-4 md:p-6 h-[calc(100vh-2rem)] flex flex-col">
-  {/* Header */}
-  <header className="shrink-0">...</header>
-  
-  {/* Goals */}
-  <GoalsBar className="shrink-0" />
-  
-  {/* Stats */}
-  <div className="shrink-0 grid grid-cols-4 gap-4">...</div>
-  
-  {/* Cards - Preenche o resto */}
-  <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    {/* Cards com overflow hidden */}
-  </div>
-</div>
+const handleSave = async (id: string, updates: Partial<Item>) => {
+  try {
+    await updateItem.mutateAsync({ id, ...updates });
+    toast({
+      title: "Salvo com sucesso!",
+      description: "As alterações foram aplicadas.",
+    });
+  } catch (error) {
+    toast({
+      title: "Erro ao salvar",
+      description: "Tente novamente.",
+      variant: "destructive",
+    });
+  }
+};
 ```
 
-#### 3.2 Cards Individuais - Altura Máxima
+#### 4. Corrigir tipagem do Item para aceitar null
 
-Cada card terá `max-h-full` e `overflow-hidden` para não expandir além do espaço disponível.
+**Arquivo:** `src/types/index.ts`
 
-#### 3.3 Ajustes nos Cards de Conteúdo
+Atualizar interface para aceitar `null`:
 
-**TasksCard.tsx:**
 ```typescript
-// Mostrar apenas 2-3 tarefas
-tasks.slice(0, 3).map(...)
+export interface Item {
+  // ...
+  due_date?: string | null;
+  reminder_at?: string | null;
+  // ...
+}
 ```
 
-**EventsCalendarCard.tsx:**
+#### 5. Invalidar todas as queries relacionadas
+
+**Arquivo:** `src/hooks/useItems.tsx`
+
+Garantir que todas as queries são invalidadas após mutações:
+
 ```typescript
-// Calendário compacto + apenas 2 próximos eventos
-upcomingEvents.slice(0, 2).map(...)
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ['items'] });
+  queryClient.invalidateQueries({ queryKey: ['items', 'upcoming-tasks'] });
+  queryClient.invalidateQueries({ queryKey: ['items', 'important'] });
+  queryClient.invalidateQueries({ queryKey: ['items', 'goals'] });
+  queryClient.invalidateQueries({ queryKey: ['items', 'events'] });
+};
 ```
 
 ---
 
-### 4. Adaptação para Cards com Cores
-
-Com fundo branco, os cards coloridos ficarão muito mais destacados. Pequenos ajustes de contraste:
-
-**DashboardCard.tsx:**
-- Adicionar sombra mais pronunciada para "flutuar" sobre o fundo branco
-- Bordas mais definidas
-
-```typescript
-className={`
-  bg-gradient-to-br ${gradientClasses[gradient]}
-  shadow-lg hover:shadow-xl  // Mais sombra
-  border border-gray-200/50  // Borda visível no branco
-`}
-```
-
----
-
-### 5. Resumo dos Arquivos a Modificar
+### Resumo dos Arquivos a Modificar
 
 | Arquivo | Mudanças |
 |---------|----------|
-| `src/pages/Dashboard.tsx` | Remover backgrounds, aplicar fundo branco, layout flex com altura fixa |
-| `src/components/dashboard/DashboardCard.tsx` | Adicionar sombras para contraste no fundo branco |
-| `src/components/dashboard/TasksCard.tsx` | Limitar para 3 tarefas |
-| `src/components/dashboard/IdeasCard.tsx` | Limitar para 3 ideias |
-| `src/components/dashboard/ProjectsCard.tsx` | Limitar para 3 projetos |
-| `src/components/dashboard/EventsCalendarCard.tsx` | Layout compacto, 2 eventos |
-| `src/components/dashboard/QuickNotesBoard.tsx` | Limitar para 4 notas |
-| `src/components/dashboard/StatCard.tsx` | Ajustar cores para fundo claro |
-| `src/components/dashboard/GoalsBar.tsx` | Ajustar cores para fundo claro |
+| `src/hooks/useItems.tsx` | Adicionar onError, melhorar invalidateQueries |
+| `src/types/index.ts` | Aceitar null em due_date e reminder_at |
+| `src/components/items/ItemEditModal.tsx` | Usar null em vez de undefined, não fechar modal imediatamente |
+| `src/pages/Tasks.tsx` | Adicionar toast no handleSave com try/catch |
+| `src/pages/Ideas.tsx` | Adicionar toast no handleSave com try/catch |
+| `src/pages/Events.tsx` | Adicionar toast no handleSave com try/catch |
+| `src/pages/Goals.tsx` | Adicionar toast no handleSave com try/catch |
+| `src/pages/Projects.tsx` | Adicionar toast no handleSave com try/catch |
+| `src/pages/Timeline.tsx` | Adicionar toast no handleSave com try/catch |
 
 ---
 
-### 6. Resultado Esperado
+### Resultado Esperado
 
-1. **Fundo branco limpo** - Sem animações de partículas, visual mais clean
-2. **Cards coloridos destacados** - Sombras e bordas realçam cada card
-3. **Tudo visível na tela** - Sem necessidade de scroll vertical
-4. **Layout responsivo** - Adapta-se a diferentes tamanhos de tela
+1. **Feedback imediato** - Toast de sucesso/erro após cada operação
+2. **Erros visíveis** - Console logs e toasts para qualquer falha
+3. **Dados sincronizados** - Invalidação correta de todas as queries
+4. **Campos nulos** - Valores undefined convertidos para null no banco
+5. **Modal mais robusto** - Não fecha até confirmar que salvou
 
+---
+
+### Detalhes Técnicos
+
+**Fluxo atual (com problema):**
+1. Usuário edita item no modal
+2. Clica em "Salvar"
+3. Modal fecha imediatamente
+4. Mutação executa em background
+5. Se falhar, usuário não vê erro
+6. Dados parecem "não salvos"
+
+**Fluxo corrigido:**
+1. Usuário edita item no modal
+2. Clica em "Salvar"
+3. Mutação executa com loading state
+4. Se sucesso: Modal fecha + Toast verde
+5. Se erro: Modal permanece + Toast vermelho
+6. Queries são invalidadas para atualizar UI
