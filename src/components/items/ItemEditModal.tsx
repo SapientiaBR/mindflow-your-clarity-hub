@@ -13,8 +13,9 @@ import { TagInput } from '@/components/tags/TagInput';
 import { Item, ItemType } from '@/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CalendarIcon, Trash2, Clock, Bell, X } from 'lucide-react';
+import { CalendarIcon, Trash2, Clock, Bell, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +31,7 @@ interface ItemEditModalProps {
   item: Item | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (id: string, updates: Partial<Item>) => void;
+  onSave: (id: string, updates: Partial<Item>) => Promise<void> | void;
   onDelete?: (id: string) => void;
 }
 
@@ -49,6 +50,7 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
   const [reminderMinute, setReminderMinute] = useState('00');
   const [progress, setProgress] = useState(0);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (item) {
@@ -82,8 +84,10 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
     }
   }, [item]);
 
-  const handleSave = () => {
-    if (!item) return;
+  const handleSave = async () => {
+    if (!item || isSaving) return;
+    
+    setIsSaving(true);
     
     const updates: Partial<Item> = {
       content,
@@ -97,7 +101,7 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
         combined.setHours(parseInt(hour), parseInt(minute), 0, 0);
         updates.due_date = combined.toISOString();
       } else {
-        updates.due_date = undefined;
+        updates.due_date = null;
       }
     }
 
@@ -108,7 +112,7 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
         combined.setHours(parseInt(reminderHour), parseInt(reminderMinute), 0, 0);
         updates.reminder_at = combined.toISOString();
       } else {
-        updates.reminder_at = undefined;
+        updates.reminder_at = null;
       }
     }
 
@@ -128,8 +132,23 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
       updates.progress = progress;
     }
 
-    onSave(item.id, updates);
-    onClose();
+    try {
+      await onSave(item.id, updates);
+      toast({
+        title: "Salvo com sucesso!",
+        description: "As alterações foram aplicadas.",
+      });
+      onClose();
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as alterações. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = () => {
@@ -404,8 +423,11 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
                 Excluir
               </Button>
             )}
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button onClick={handleSave}>Salvar</Button>
+            <Button variant="outline" onClick={onClose} disabled={isSaving}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {isSaving ? 'Salvando...' : 'Salvar'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
