@@ -12,8 +12,8 @@ export default function Ideas() {
   const { items, updateItem, deleteItem } = useItems('idea');
   const [editingItem, setEditingItem] = useState<Item | null>(null);
 
-  const handleSave = (id: string, updates: Partial<Item>) => {
-    updateItem.mutate({ id, ...updates });
+  const handleSave = async (id: string, updates: Partial<Item>) => {
+    await updateItem.mutateAsync({ id, ...updates });
   };
 
   const handleDelete = (id: string) => {

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { Item, ItemType, ItemStatus, PriorityLevel } from '@/types';
+import { toast } from '@/hooks/use-toast';
 
 type DatabaseItem = {
   id: string;
@@ -67,6 +68,15 @@ export function useItems(type?: ItemType) {
     enabled: !!user,
   });
 
+  const invalidateAllQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ['items'] });
+    queryClient.invalidateQueries({ queryKey: ['items', 'recent'] });
+    queryClient.invalidateQueries({ queryKey: ['items', 'upcoming-tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['items', 'important'] });
+    queryClient.invalidateQueries({ queryKey: ['items', 'goals'] });
+    queryClient.invalidateQueries({ queryKey: ['items', 'events'] });
+  };
+
   const createItem = useMutation({
     mutationFn: async (newItem: {
       type: ItemType;
@@ -100,7 +110,19 @@ export function useItems(type?: ItemType) {
       return mapDatabaseItem(data as DatabaseItem);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
+      invalidateAllQueries();
+      toast({
+        title: "Item criado!",
+        description: "O item foi adicionado com sucesso.",
+      });
+    },
+    onError: (error) => {
+      console.error('Erro ao criar item:', error);
+      toast({
+        title: "Erro ao criar",
+        description: "Não foi possível criar o item. Tente novamente.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -120,7 +142,15 @@ export function useItems(type?: ItemType) {
       return mapDatabaseItem(data as DatabaseItem);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
+      invalidateAllQueries();
+    },
+    onError: (error) => {
+      console.error('Erro ao atualizar item:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as alterações. Tente novamente.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -134,7 +164,19 @@ export function useItems(type?: ItemType) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
+      invalidateAllQueries();
+      toast({
+        title: "Item excluído",
+        description: "O item foi removido com sucesso.",
+      });
+    },
+    onError: (error) => {
+      console.error('Erro ao excluir item:', error);
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir o item. Tente novamente.",
+        variant: "destructive",
+      });
     },
   });
 

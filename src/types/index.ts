@@ -9,12 +9,12 @@ export interface Item {
   user_id: string;
   type: ItemType;
   content: string;
-  title?: string;
+  title?: string | null;
   status: ItemStatus;
-  priority?: PriorityLevel;
-  due_date?: string;
-  reminder_at?: string;
-  parent_id?: string;
+  priority?: PriorityLevel | null;
+  due_date?: string | null;
+  reminder_at?: string | null;
+  parent_id?: string | null;
   tags: string[];
   is_important: boolean;
   position_x: number;

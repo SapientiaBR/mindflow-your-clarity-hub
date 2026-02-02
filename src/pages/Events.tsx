@@ -16,8 +16,8 @@ export default function Events() {
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
-  const handleSave = (id: string, updates: Partial<Item>) => {
-    updateItem.mutate({ id, ...updates });
+  const handleSave = async (id: string, updates: Partial<Item>) => {
+    await updateItem.mutateAsync({ id, ...updates });
   };
 
   const handleDelete = (id: string) => {

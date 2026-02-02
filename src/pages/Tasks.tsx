@@ -65,8 +65,8 @@ export default function Tasks() {
     setDragOverIndex(null);
   }, [orderedItems, updateItem]);
 
-  const handleSave = (id: string, updates: Partial<Item>) => {
-    updateItem.mutate({ id, ...updates });
+  const handleSave = async (id: string, updates: Partial<Item>) => {
+    await updateItem.mutateAsync({ id, ...updates });
   };
 
   const handleDelete = (id: string) => {
