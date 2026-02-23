@@ -11,6 +11,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { TagInput } from '@/components/tags/TagInput';
 import { Item, ItemType } from '@/types';
+import { useParentItems, getParentItemsByType, getParentDisplayName } from '@/hooks/useParentItems';
+import { SelectGroup, SelectLabel } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CalendarIcon, Trash2, Clock, Bell, X, Loader2 } from 'lucide-react';
@@ -49,8 +51,12 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
   const [reminderHour, setReminderHour] = useState('09');
   const [reminderMinute, setReminderMinute] = useState('00');
   const [progress, setProgress] = useState(0);
+  const [parentId, setParentId] = useState<string | null>(null);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const { data: parentItems = [] } = useParentItems();
+  const groupedParents = getParentItemsByType(parentItems);
 
   useEffect(() => {
     if (item) {
@@ -81,6 +87,7 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
         setReminderMinute('00');
       }
       setProgress(item.progress || 0);
+      setParentId(item.parent_id || null);
     }
   }, [item]);
 
@@ -118,6 +125,7 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
 
     if (item.type === 'task') {
       updates.priority = priority as any;
+      updates.parent_id = parentId;
     }
 
     if (item.type === 'idea') {
@@ -230,6 +238,51 @@ export function ItemEditModal({ item, isOpen, onClose, onSave, onDelete }: ItemE
                     <SelectItem value="medium">🟡 Média</SelectItem>
                     <SelectItem value="high">🟠 Alta</SelectItem>
                     <SelectItem value="urgent">🔴 Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Parent link selector for tasks */}
+            {item.type === 'task' && (
+              <div className="space-y-2">
+                <Label>Vinculado a</Label>
+                <Select value={parentId || 'none'} onValueChange={(v) => setParentId(v === 'none' ? null : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Nenhum vínculo" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {groupedParents.projects.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>📁 Projetos</SelectLabel>
+                        {groupedParents.projects.map(p => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {getParentDisplayName(p)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    {groupedParents.ideas.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>💡 Ideias</SelectLabel>
+                        {groupedParents.ideas.map(p => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {getParentDisplayName(p)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    {groupedParents.events.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>📅 Eventos</SelectLabel>
+                        {groupedParents.events.map(p => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {getParentDisplayName(p)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
