@@ -1,189 +1,136 @@
 
-## Plano de Correção: Varredura Completa do Site
+## Plano: Linkar Tarefas com Projetos, Ideias e Eventos
 
-### Problema Identificado
+### Visao Geral
+Permitir que ao criar ou editar uma tarefa, o usuario possa opcionalmente selecionar um projeto, ideia ou evento ao qual essa tarefa pertence. O campo `parent_id` ja existe na tabela `items` e sera usado para essa ligacao.
 
-Ao analisar o fluxo de atualização dos cards, identifiquei que o problema de "updates que não salvam" está relacionado à **falta de feedback visual imediato e possíveis erros silenciosos** nas mutações do React Query.
+### Como Vai Funcionar
 
-### Diagnóstico Detalhado
-
-#### 1. Problema Principal: Mutação sem Feedback de Erro
-
-No arquivo `src/hooks/useItems.tsx`, a função `updateItem` não tem tratamento de erro no callback:
-
-```typescript
-const updateItem = useMutation({
-  mutationFn: async ({ id, ...updates }) => {
-    const { data, error } = await supabase.from('items').update(updates).eq('id', id).select().single();
-    if (error) throw error;  // Erro é lançado, mas...
-    return mapDatabaseItem(data);
-  },
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['items'] });
-    // Sem toast de sucesso!
-  },
-  // FALTA: onError callback!
-});
+```text
+Criar/Editar Tarefa
++-------------------------------+
+| Conteudo: [______________]    |
+| Prioridade: [Media v]        |
+| Vinculado a: [Nenhum v]      |  <-- NOVO campo
+|   - Nenhum                    |
+|   - Projeto: Criar um SAAS   |
+|   - Ideia: App de fitness    |
+|   - Evento: Reuniao kickoff  |
+| Prazo: [__/__/____]          |
++-------------------------------+
 ```
 
-#### 2. Problema Secundário: ItemEditModal não mostra erros
+### Mudancas Necessarias
 
-No `ItemEditModal.tsx`, o `handleSave` chama `onSave(item.id, updates)` e fecha imediatamente:
+#### 1. Novo hook: `useParentItems` (novo arquivo)
 
-```typescript
-const handleSave = () => {
-  // ... monta updates
-  onSave(item.id, updates);
-  onClose();  // Fecha ANTES de saber se salvou!
-};
-```
+**Arquivo:** `src/hooks/useParentItems.ts`
 
-#### 3. Problema com undefined values
+Um hook simples que busca todos os itens do tipo `project`, `idea` e `event` para popular o seletor. Retorna os itens agrupados por tipo.
 
-No `ItemEditModal.tsx`, ao definir `updates.due_date = undefined` ou `updates.reminder_at = undefined`, o Supabase pode não processar corretamente. Deve-se usar `null` para limpar campos.
-
----
-
-### Correções Necessárias
-
-#### 1. Adicionar tratamento de erros e feedback no useItems.tsx
-
-**Arquivo:** `src/hooks/useItems.tsx`
-
-- Adicionar `onError` callback em todas as mutações
-- Adicionar `onSuccess` com toast de confirmação
-- Retornar a Promise para permitir await
-
-```typescript
-const updateItem = useMutation({
-  mutationFn: async ({ id, ...updates }) => {
-    const { data, error } = await supabase
-      .from('items')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw error;
-    return mapDatabaseItem(data);
-  },
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['items'] });
-  },
-  onError: (error) => {
-    console.error('Erro ao atualizar item:', error);
-  },
-});
-```
-
-#### 2. Corrigir ItemEditModal para usar null em vez de undefined
+#### 2. ItemEditModal - Adicionar seletor de vinculo
 
 **Arquivo:** `src/components/items/ItemEditModal.tsx`
 
-```typescript
-// De:
-updates.due_date = undefined;
+- Adicionar estado `parentId` inicializado a partir de `item.parent_id`
+- Renderizar um `Select` com opcoes agrupadas (Projetos, Ideias, Eventos)
+- Incluir `parent_id` no objeto `updates` ao salvar
+- Mostrar o seletor apenas para tarefas (`item.type === 'task'`)
 
-// Para:
-updates.due_date = null;
-```
+#### 3. Chat - Adicionar seletor ao criar tarefas
 
-#### 3. Adicionar feedback visual nas páginas
+**Arquivo:** `src/pages/Chat.tsx`
 
-**Arquivos:** `src/pages/Tasks.tsx`, `src/pages/Ideas.tsx`, `src/pages/Events.tsx`, `src/pages/Goals.tsx`, `src/pages/Projects.tsx`, `src/pages/Timeline.tsx`
+- Quando o tipo selecionado for `task`, mostrar um seletor de vinculo ao lado do botao de tipo
+- Enviar `parent_id` no `createItem` se selecionado
 
-Modificar `handleSave` para mostrar toast de sucesso/erro:
+#### 4. Tasks.tsx - Mostrar vinculo na lista
 
-```typescript
-const handleSave = async (id: string, updates: Partial<Item>) => {
-  try {
-    await updateItem.mutateAsync({ id, ...updates });
-    toast({
-      title: "Salvo com sucesso!",
-      description: "As alterações foram aplicadas.",
-    });
-  } catch (error) {
-    toast({
-      title: "Erro ao salvar",
-      description: "Tente novamente.",
-      variant: "destructive",
-    });
-  }
-};
-```
+**Arquivo:** `src/pages/Tasks.tsx`
 
-#### 4. Corrigir tipagem do Item para aceitar null
+- Buscar itens pai (projetos/ideias/eventos) para exibir o nome
+- Mostrar badge com o nome do projeto/ideia/evento vinculado em cada tarefa
+- Permitir filtrar tarefas por projeto
+
+#### 5. Tipos - Atualizar interface
 
 **Arquivo:** `src/types/index.ts`
 
-Atualizar interface para aceitar `null`:
+- Garantir que `parent_id` aceita `string | null` para limpar vinculos
 
-```typescript
-export interface Item {
-  // ...
-  due_date?: string | null;
-  reminder_at?: string | null;
-  // ...
-}
-```
-
-#### 5. Invalidar todas as queries relacionadas
+#### 6. useItems - Incluir parent_id no createItem
 
 **Arquivo:** `src/hooks/useItems.tsx`
 
-Garantir que todas as queries são invalidadas após mutações:
+- Ja suporta `parent_id` no `createItem`, apenas garantir que funciona com `null`
+
+---
+
+### Detalhes Tecnicos
+
+#### Hook useParentItems
 
 ```typescript
-onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: ['items'] });
-  queryClient.invalidateQueries({ queryKey: ['items', 'upcoming-tasks'] });
-  queryClient.invalidateQueries({ queryKey: ['items', 'important'] });
-  queryClient.invalidateQueries({ queryKey: ['items', 'goals'] });
-  queryClient.invalidateQueries({ queryKey: ['items', 'events'] });
-};
+// Busca projetos, ideias e eventos para usar como opcoes de vinculo
+export function useParentItems() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['items', 'parents'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('items')
+        .select('id, type, content, title')
+        .in('type', ['project', 'idea', 'event'])
+        .neq('status', 'completed');
+      return data;
+    },
+    enabled: !!user,
+  });
+}
+```
+
+#### Seletor no ItemEditModal
+
+O seletor tera opcoes agrupadas:
+
+```text
+[Selecionar vinculo (opcional)]
+--- Projetos ---
+  Criar um SAAS
+  App de Receitas
+--- Ideias ---
+  Sistema de gamificacao
+--- Eventos ---
+  Reuniao de kickoff
+```
+
+Usando `SelectGroup` + `SelectLabel` do Radix UI para agrupar visualmente.
+
+#### Exibicao na lista de tarefas
+
+Cada tarefa vinculada mostrara um badge pequeno:
+
+```text
+[x] Configurar banco de dados
+    [Projeto: Criar um SAAS]  [Alta]  [Prazo: 15 Mar]
 ```
 
 ---
 
-### Resumo dos Arquivos a Modificar
+### Resumo dos Arquivos
 
-| Arquivo | Mudanças |
-|---------|----------|
-| `src/hooks/useItems.tsx` | Adicionar onError, melhorar invalidateQueries |
-| `src/types/index.ts` | Aceitar null em due_date e reminder_at |
-| `src/components/items/ItemEditModal.tsx` | Usar null em vez de undefined, não fechar modal imediatamente |
-| `src/pages/Tasks.tsx` | Adicionar toast no handleSave com try/catch |
-| `src/pages/Ideas.tsx` | Adicionar toast no handleSave com try/catch |
-| `src/pages/Events.tsx` | Adicionar toast no handleSave com try/catch |
-| `src/pages/Goals.tsx` | Adicionar toast no handleSave com try/catch |
-| `src/pages/Projects.tsx` | Adicionar toast no handleSave com try/catch |
-| `src/pages/Timeline.tsx` | Adicionar toast no handleSave com try/catch |
-
----
+| Arquivo | Mudanca |
+|---------|---------|
+| `src/hooks/useParentItems.ts` | **Novo** - Hook para buscar projetos/ideias/eventos |
+| `src/types/index.ts` | Ajustar `parent_id` para aceitar `null` |
+| `src/components/items/ItemEditModal.tsx` | Adicionar seletor de vinculo para tarefas |
+| `src/pages/Chat.tsx` | Adicionar seletor de vinculo ao criar tarefas |
+| `src/pages/Tasks.tsx` | Mostrar badge do item vinculado na lista |
+| `src/hooks/useItems.tsx` | Garantir suporte a `parent_id: null` |
 
 ### Resultado Esperado
 
-1. **Feedback imediato** - Toast de sucesso/erro após cada operação
-2. **Erros visíveis** - Console logs e toasts para qualquer falha
-3. **Dados sincronizados** - Invalidação correta de todas as queries
-4. **Campos nulos** - Valores undefined convertidos para null no banco
-5. **Modal mais robusto** - Não fecha até confirmar que salvou
-
----
-
-### Detalhes Técnicos
-
-**Fluxo atual (com problema):**
-1. Usuário edita item no modal
-2. Clica em "Salvar"
-3. Modal fecha imediatamente
-4. Mutação executa em background
-5. Se falhar, usuário não vê erro
-6. Dados parecem "não salvos"
-
-**Fluxo corrigido:**
-1. Usuário edita item no modal
-2. Clica em "Salvar"
-3. Mutação executa com loading state
-4. Se sucesso: Modal fecha + Toast verde
-5. Se erro: Modal permanece + Toast vermelho
-6. Queries são invalidadas para atualizar UI
+1. Ao criar tarefa no Chat, opcao de vincular a projeto/ideia/evento
+2. Ao editar tarefa, poder mudar ou remover o vinculo
+3. Na lista de tarefas, ver claramente a qual projeto pertence
+4. Campo totalmente opcional - tarefas sem vinculo continuam funcionando normalmente
