@@ -9,13 +9,15 @@ import { DraggableItem } from '@/components/items/DraggableItem';
 import { ItemActions } from '@/components/items/ItemActions';
 import { ItemEditModal } from '@/components/items/ItemEditModal';
 import { TagBadge } from '@/components/tags/TagBadge';
-import { Item } from '@/types';
-import { Star, Clock, Bell, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
+import { Item, getItemTypeConfig } from '@/types';
+import { useParentItems, getParentDisplayName } from '@/hooks/useParentItems';
+import { Star, Clock, Bell, ChevronDown, ChevronUp, CheckCircle2, Link } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 export default function Tasks() {
   const { items, updateItem, deleteItem } = useItems('task');
+  const { data: parentItems = [] } = useParentItems();
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -129,6 +131,18 @@ export default function Tasks() {
               </span>
             )}
             
+            {task.parent_id && (() => {
+              const parent = parentItems.find(p => p.id === task.parent_id);
+              if (!parent) return null;
+              const config = getItemTypeConfig(parent.type);
+              return (
+                <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                  <Link className="w-3 h-3" />
+                  {config.icon} {getParentDisplayName(parent)}
+                </span>
+              );
+            })()}
+
             {task.tags && task.tags.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {task.tags.map((tag, idx) => (

@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Send, Plus, X, CalendarIcon, Clock } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
+import { useParentItems, getParentItemsByType, getParentDisplayName } from '@/hooks/useParentItems';
+import { SelectGroup, SelectLabel } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -22,7 +24,10 @@ export default function Chat() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedHour, setSelectedHour] = useState('09');
   const [selectedMinute, setSelectedMinute] = useState('00');
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
   const { items, createItem } = useItems();
+  const { data: parentItems = [] } = useParentItems();
+  const groupedParents = getParentItemsByType(parentItems);
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -50,6 +55,7 @@ export default function Chat() {
         type: selectedType,
         content: message.trim(),
         ...(eventDateTime && { due_date: eventDateTime }),
+        ...(selectedType === 'task' && selectedParentId && { parent_id: selectedParentId }),
       });
       
       const typeConfig = getItemTypeConfig(selectedType);
@@ -61,6 +67,7 @@ export default function Chat() {
       setSelectedDate(undefined);
       setSelectedHour('09');
       setSelectedMinute('00');
+      setSelectedParentId(null);
     } catch (error) {
       toast({
         title: 'Erro ao salvar',
@@ -246,6 +253,48 @@ export default function Chat() {
                     </div>
                   </PopoverContent>
                 </Popover>
+              )}
+
+              {/* Parent link selector for tasks */}
+              {selectedType === 'task' && (
+                <Select value={selectedParentId || 'none'} onValueChange={(v) => setSelectedParentId(v === 'none' ? null : v)}>
+                  <SelectTrigger className="shrink-0 w-auto max-w-[140px]">
+                    <SelectValue placeholder="🔗 Vincular" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {groupedParents.projects.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>📁 Projetos</SelectLabel>
+                        {groupedParents.projects.map(p => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {getParentDisplayName(p)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    {groupedParents.ideas.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>💡 Ideias</SelectLabel>
+                        {groupedParents.ideas.map(p => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {getParentDisplayName(p)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    {groupedParents.events.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>📅 Eventos</SelectLabel>
+                        {groupedParents.events.map(p => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {getParentDisplayName(p)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                  </SelectContent>
+                </Select>
               )}
 
               <Input
