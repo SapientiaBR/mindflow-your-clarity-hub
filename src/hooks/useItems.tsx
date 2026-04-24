@@ -82,6 +82,7 @@ export function useItems(type?: ItemType) {
       type: ItemType;
       content: string;
       title?: string;
+      status?: string;
       priority?: PriorityLevel;
       due_date?: string;
       parent_id?: string;
@@ -97,6 +98,7 @@ export function useItems(type?: ItemType) {
           type: newItem.type,
           content: newItem.content,
           title: newItem.title,
+          status: newItem.status || 'active',
           priority: newItem.priority,
           due_date: newItem.due_date,
           parent_id: newItem.parent_id,

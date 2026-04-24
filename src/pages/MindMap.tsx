@@ -92,9 +92,20 @@ function MindMapFlow() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // Sync nodes and edges when data changes
+  // Sync nodes and edges when data changes, preserving local positions
   useEffect(() => {
-    setNodes(initialNodes);
+    setNodes((nds) => {
+      const newNodes = initialNodes.map(inNode => {
+        const existing = nds.find(n => n.id === inNode.id);
+        if (existing) {
+          return { ...existing, data: inNode.data };
+        }
+        return inNode;
+      });
+      
+      // Remove nodes that no longer exist
+      return newNodes.filter(n => initialNodes.some(inNode => inNode.id === n.id));
+    });
   }, [initialNodes, setNodes]);
 
   useEffect(() => {

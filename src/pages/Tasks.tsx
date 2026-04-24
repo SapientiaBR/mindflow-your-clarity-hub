@@ -1,71 +1,33 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { useItems } from '@/hooks/useItems';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Checkbox } from '@/components/ui/checkbox';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { DraggableItem } from '@/components/items/DraggableItem';
 import { ItemActions } from '@/components/items/ItemActions';
 import { ItemEditModal } from '@/components/items/ItemEditModal';
 import { TagBadge } from '@/components/tags/TagBadge';
-import { Item, getItemTypeConfig } from '@/types';
-import { useParentItems, getParentDisplayName } from '@/hooks/useParentItems';
-import { Star, Clock, Bell, ChevronDown, ChevronUp, CheckCircle2, Link } from 'lucide-react';
+import { Item } from '@/types';
+import {
+  CheckCircle2, Circle, Star, LayoutList, LayoutGrid,
+  Plus, Filter, Search, Clock, ArrowUpDown
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Input } from '@/components/ui/input';
+import KanbanBoard from '@/components/tasks/KanbanBoard';
+import { cn } from '@/lib/utils';
+
+type ViewMode = 'list' | 'kanban';
+type SortBy = 'date' | 'priority' | 'name';
+type FilterPriority = 'all' | 'urgent' | 'high' | 'medium' | 'low';
 
 export default function Tasks() {
-  const { items, updateItem, deleteItem } = useItems('task');
-  const { data: parentItems = [] } = useParentItems();
+  const { items, updateItem, deleteItem, createItem } = useItems('task');
   const [editingItem, setEditingItem] = useState<Item | null>(null);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [orderedItems, setOrderedItems] = useState<Item[]>([]);
-  const [showCompleted, setShowCompleted] = useState(true);
-
-  // Split tasks into active and completed
-  const { activeTasks, completedTasks } = useMemo(() => {
-    const active = items.filter(item => item.status !== 'completed');
-    const completed = items.filter(item => item.status === 'completed');
-    return { activeTasks: active, completedTasks: completed };
-  }, [items]);
-
-  // Initialize ordered items
-  const displayItems = orderedItems.length > 0 ? orderedItems : activeTasks;
-
-  const toggleTask = (id: string, completed: boolean) => {
-    updateItem.mutate({ id, status: completed ? 'completed' : 'active' });
-  };
-
-  const handleDragStart = useCallback((index: number) => {
-    setDraggedIndex(index);
-    setOrderedItems([...activeTasks]);
-  }, [activeTasks]);
-
-  const handleDragOver = useCallback((index: number) => {
-    if (draggedIndex === null || draggedIndex === index) return;
-    setDragOverIndex(index);
-    
-    // Reorder items
-    const newItems = [...orderedItems.length > 0 ? orderedItems : activeTasks];
-    const [draggedItem] = newItems.splice(draggedIndex, 1);
-    newItems.splice(index, 0, draggedItem);
-    setOrderedItems(newItems);
-    setDraggedIndex(index);
-  }, [draggedIndex, orderedItems, activeTasks]);
-
-  const handleDragEnd = useCallback(() => {
-    // Save new order to database
-    orderedItems.forEach((item, index) => {
-      if (item.sort_order !== index) {
-        updateItem.mutate({ id: item.id, sort_order: index });
-      }
-    });
-    
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  }, [orderedItems, updateItem]);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterPriority, setFilterPriority] = useState<FilterPriority>('all');
+  const [sortBy, setSortBy] = useState<SortBy>('date');
+  const [isAddingInline, setIsAddingInline] = useState(false);
+  const [newTaskContent, setNewTaskContent] = useState('');
 
   const handleSave = async (id: string, updates: Partial<Item>) => {
     await updateItem.mutateAsync({ id, ...updates });
@@ -79,175 +41,305 @@ export default function Tasks() {
     updateItem.mutate({ id, is_important: isImportant });
   };
 
-  const getPriorityColor = (priority: string | undefined) => {
-    switch (priority) {
-      case 'urgent': return 'text-red-400 bg-red-500/20';
-      case 'high': return 'text-orange-400 bg-orange-500/20';
-      case 'medium': return 'text-yellow-400 bg-yellow-500/20';
-      case 'low': return 'text-green-400 bg-green-500/20';
-      default: return 'text-muted-foreground bg-muted/20';
-    }
+  const handleToggleComplete = (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'completed' ? 'active' : 'completed';
+    updateItem.mutate({ id, status: newStatus });
   };
 
-  const TaskItem = ({ task, index, isDraggable = true }: { task: Item; index: number; isDraggable?: boolean }) => {
-    const content = (
-      <div 
-        className={`glass-card rounded-xl p-4 flex items-start gap-3 group cursor-pointer transition-all hover:border-primary/30 ${
-          task.status === 'completed' ? 'opacity-60' : ''
-        }`}
-        onClick={() => setEditingItem(task)}
-      >
-        <Checkbox 
-          checked={task.status === 'completed'} 
-          onCheckedChange={(c) => {
-            toggleTask(task.id, !!c);
-          }}
-          onClick={(e) => e.stopPropagation()}
-          className="mt-1" 
-        />
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start gap-2">
-            {task.is_important && (
-              <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 mt-0.5 flex-shrink-0" />
-            )}
-            <p className={`flex-1 ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
-              {task.content}
-            </p>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-2 mt-2">
-            {task.due_date && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="w-3 h-3" />
-                {format(new Date(task.due_date), "dd MMM yyyy 'às' HH:mm", { locale: ptBR })}
-              </span>
-            )}
-            
-            {task.reminder_at && (
-              <span className="flex items-center gap-1 text-xs text-orange-400">
-                <Bell className="w-3 h-3" />
-                {format(new Date(task.reminder_at), "dd MMM HH:mm", { locale: ptBR })}
-              </span>
-            )}
-            
-            {task.parent_id && (() => {
-              const parent = parentItems.find(p => p.id === task.parent_id);
-              if (!parent) return null;
-              const config = getItemTypeConfig(parent.type);
-              return (
-                <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                  <Link className="w-3 h-3" />
-                  {config.icon} {getParentDisplayName(parent)}
-                </span>
-              );
-            })()}
+  const handleCreateTask = (content: string, status: string = 'active') => {
+    createItem.mutate({
+      type: 'task',
+      content,
+      status,
+    });
+  };
 
-            {task.tags && task.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {task.tags.map((tag, idx) => (
-                  <TagBadge key={idx} tag={tag} size="sm" />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <span className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(task.priority)}`}>
-            {task.priority || 'medium'}
-          </span>
-          
-          <ItemActions
-            item={task}
-            onEdit={setEditingItem}
-            onDelete={handleDelete}
-            onToggleImportant={handleToggleImportant}
-          />
-        </div>
-      </div>
-    );
+  const handleAddInline = () => {
+    if (!newTaskContent.trim()) return;
+    handleCreateTask(newTaskContent.trim());
+    setNewTaskContent('');
+    setIsAddingInline(false);
+  };
 
-    if (isDraggable) {
-      return (
-        <DraggableItem
-          id={task.id}
-          index={index}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-          isDragging={draggedIndex === index}
-          isDraggedOver={dragOverIndex === index}
-        >
-          {content}
-        </DraggableItem>
+  // Filter and sort
+  const filteredItems = useMemo(() => {
+    let filtered = [...items];
+
+    // Search
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(i =>
+        i.content.toLowerCase().includes(q) ||
+        i.title?.toLowerCase().includes(q) ||
+        i.tags?.some(t => t.toLowerCase().includes(q))
       );
     }
 
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.2 }}
-      >
-        {content}
-      </motion.div>
-    );
-  };
+    // Priority filter
+    if (filterPriority !== 'all') {
+      filtered = filtered.filter(i => i.priority === filterPriority);
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      if (a.status === 'completed' && b.status !== 'completed') return 1;
+      if (a.status !== 'completed' && b.status === 'completed') return -1;
+
+      switch (sortBy) {
+        case 'priority': {
+          const order = { urgent: 0, high: 1, medium: 2, low: 3 };
+          return (order[a.priority as keyof typeof order] ?? 4) - (order[b.priority as keyof typeof order] ?? 4);
+        }
+        case 'name':
+          return (a.content || '').localeCompare(b.content || '');
+        case 'date':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+
+    return filtered;
+  }, [items, searchQuery, filterPriority, sortBy]);
+
+  const completedCount = items.filter(i => i.status === 'completed').length;
+  const totalCount = items.length;
+  const completionPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
     <AppLayout>
       <div className="flex-1 p-4 md:p-6 overflow-y-auto">
-        <header className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-display font-bold gradient-text">✅ Tarefas</h1>
-          <p className="text-muted-foreground">Arraste para reordenar • Clique para editar</p>
-        </header>
-        
-        <div className="space-y-6 max-w-2xl">
-          {/* Active Tasks */}
-          <div className="space-y-2">
-            {displayItems.map((task, i) => (
-              <TaskItem key={task.id} task={task} index={i} isDraggable />
-            ))}
-            
-            {!displayItems.length && (
-              <p className="text-muted-foreground text-center py-12">
-                Nenhuma tarefa ativa. Use o chat para criar!
+        {/* Header */}
+        <header className="mb-5">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-display font-bold gradient-text">Tarefas</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {completedCount}/{totalCount} concluídas · {completionPct}%
               </p>
-            )}
+            </div>
+            <div className="flex items-center gap-2">
+              {/* View toggle */}
+              <div className="flex items-center glass-card rounded-lg p-0.5">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    'p-1.5 rounded-md transition-all',
+                    viewMode === 'list' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <LayoutList className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('kanban')}
+                  className={cn(
+                    'p-1.5 rounded-md transition-all',
+                    viewMode === 'kanban' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Add button */}
+              <Button
+                size="sm"
+                onClick={() => setIsAddingInline(true)}
+                className="gap-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Nova</span>
+              </Button>
+            </div>
           </div>
 
-          {/* Completed Tasks Section */}
-          {completedTasks.length > 0 && (
-            <Collapsible open={showCompleted} onOpenChange={setShowCompleted}>
-              <CollapsibleTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-between p-4 h-auto glass-card rounded-xl hover:bg-muted/30"
-                >
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-400" />
-                    <span className="font-medium">Tarefas Finalizadas</span>
-                    <span className="text-sm text-muted-foreground">({completedTasks.length})</span>
-                  </div>
-                  {showCompleted ? (
-                    <ChevronUp className="w-5 h-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                  )}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-2 mt-2">
-                <AnimatePresence>
-                  {completedTasks.map((task, i) => (
-                    <TaskItem key={task.id} task={task} index={i} isDraggable={false} />
-                  ))}
-                </AnimatePresence>
-              </CollapsibleContent>
-            </Collapsible>
+          {/* Progress bar */}
+          <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${completionPct}%` }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+            />
+          </div>
+
+          {/* Filters (list view only) */}
+          {viewMode === 'list' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="flex items-center gap-2 mt-3 flex-wrap"
+            >
+              <div className="relative flex-1 min-w-[180px] max-w-xs">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar tarefas..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 h-8 text-sm bg-muted/50 border-white/5"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                {(['all', 'urgent', 'high', 'medium', 'low'] as const).map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setFilterPriority(p)}
+                    className={cn(
+                      'text-[11px] px-2 py-1 rounded-full transition-colors',
+                      filterPriority === p
+                        ? 'bg-primary/20 text-primary font-medium'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    )}
+                  >
+                    {p === 'all' ? 'Todas' : p.charAt(0).toUpperCase() + p.slice(1)}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setSortBy(s => s === 'date' ? 'priority' : s === 'priority' ? 'name' : 'date')}
+                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded-full hover:bg-muted transition-colors"
+              >
+                <ArrowUpDown className="w-3 h-3" />
+                {sortBy === 'date' ? 'Data' : sortBy === 'priority' ? 'Prioridade' : 'Nome'}
+              </button>
+            </motion.div>
           )}
-        </div>
+        </header>
+
+        {/* Inline add */}
+        <AnimatePresence>
+          {isAddingInline && viewMode === 'list' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4"
+            >
+              <div className="glass-card rounded-xl p-3 flex items-center gap-3">
+                <Circle className="w-5 h-5 text-muted-foreground shrink-0" />
+                <Input
+                  value={newTaskContent}
+                  onChange={(e) => setNewTaskContent(e.target.value)}
+                  placeholder="Descreva a tarefa e pressione Enter..."
+                  className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddInline();
+                    if (e.key === 'Escape') {
+                      setIsAddingInline(false);
+                      setNewTaskContent('');
+                    }
+                  }}
+                />
+                <Button size="sm" variant="ghost" onClick={() => { setIsAddingInline(false); setNewTaskContent(''); }}>
+                  Cancelar
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Content */}
+        {viewMode === 'kanban' ? (
+          <KanbanBoard
+            items={items}
+            onUpdateItem={(id, updates) => updateItem.mutate({ id, ...updates })}
+            onCreateItem={handleCreateTask}
+            onEditItem={setEditingItem}
+          />
+        ) : (
+          <div className="space-y-2">
+            {filteredItems.map((task, i) => (
+              <motion.div
+                key={task.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className={cn(
+                  'glass-card rounded-xl p-3 group hover-lift cursor-pointer flex items-start gap-3 transition-all',
+                  task.status === 'completed' && 'opacity-60'
+                )}
+              >
+                {/* Checkbox */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleToggleComplete(task.id, task.status); }}
+                  className="mt-0.5 shrink-0 transition-colors"
+                >
+                  {task.status === 'completed' ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-muted-foreground hover:text-indigo-400" />
+                  )}
+                </button>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0" onClick={() => setEditingItem(task)}>
+                  <p className={cn(
+                    'text-sm leading-snug',
+                    task.status === 'completed' && 'line-through text-muted-foreground'
+                  )}>
+                    {task.content}
+                  </p>
+
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    {task.is_important && (
+                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                    )}
+                    {task.priority && (
+                      <span className={cn(
+                        'text-[10px] px-1.5 py-0.5 rounded-full',
+                        task.priority === 'urgent' && 'bg-red-500/20 text-red-400',
+                        task.priority === 'high' && 'bg-orange-500/20 text-orange-400',
+                        task.priority === 'medium' && 'bg-yellow-500/20 text-yellow-400',
+                        task.priority === 'low' && 'bg-emerald-500/20 text-emerald-400',
+                      )}>
+                        {task.priority}
+                      </span>
+                    )}
+                    {task.due_date && (
+                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Clock className="w-2.5 h-2.5" />
+                        {new Date(task.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                      </span>
+                    )}
+                    {task.tags?.map((tag, idx) => (
+                      <TagBadge key={idx} tag={tag} size="sm" />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ItemActions
+                    item={task}
+                    onEdit={setEditingItem}
+                    onDelete={handleDelete}
+                    onToggleImportant={handleToggleImportant}
+                  />
+                </div>
+              </motion.div>
+            ))}
+
+            {!filteredItems.length && (
+              <div className="text-center py-16 space-y-3">
+                <CheckCircle2 className="w-12 h-12 mx-auto text-muted-foreground/30" />
+                <p className="text-muted-foreground">
+                  {searchQuery ? 'Nenhuma tarefa encontrada' : 'Nenhuma tarefa ainda'}
+                </p>
+                {!searchQuery && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsAddingInline(true)}
+                    className="gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Criar primeira tarefa
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <ItemEditModal

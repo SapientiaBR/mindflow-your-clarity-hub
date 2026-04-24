@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Brain, Sparkles, ArrowRight, Mail, Lock, User } from 'lucide-react';
+import { Brain, Sparkles, ArrowRight, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,6 +14,7 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -23,6 +24,15 @@ export default function Auth() {
     setLoading(true);
 
     try {
+      if (!isLogin) {
+        if (password.length < 8) {
+          throw new Error('A senha deve ter no mínimo 8 caracteres.');
+        }
+        if (!/\d/.test(password) || !/[a-zA-Z]/.test(password)) {
+          throw new Error('A senha deve conter letras e números.');
+        }
+      }
+
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) throw error;
@@ -153,14 +163,20 @@ export default function Auth() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
-                  className="pl-10 bg-muted/50 border-muted"
+                  className="pl-10 pr-10 bg-muted/50 border-muted"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
